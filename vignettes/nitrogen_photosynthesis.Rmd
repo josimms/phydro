@@ -118,7 +118,7 @@ acc_2 = dat_2 %>% filter(ppfd == 1200)
 dat_inst_2 = tibble(ppfd = seq(1,1200,length.out=50)) %>% mutate(dat_2 = purrr::map(.x=ppfd, .f = ~rphydro_instantaneous_nitrogen(acc_2$vcmax25, acc_2$jmax25, tc, tc, .x, netrad, vpd, co2, pa, nitrogen, fapar, kphio, psi_soil, rdark, vwind, a_jmax, par_plant, list(alpha=0.1, gamma=1, carbon_allocation = allocation), options))) %>% unnest_wider(dat_2)
 
 acc_original = dat_original %>% filter(ppfd == 1200)
-dat_inst_original = tibble(ppfd = seq(1,1200,length.out=50)) %>% mutate(acc_original = purrr::map(.x=ppfd, .f = ~rphydro_instantaneous_nitrogen(acc_original$vcmax25, acc_original$jmax25, tc, tc, .x, netrad, vpd, co2, pa, nitrogen, fapar, kphio, psi_soil, rdark, vwind, a_jmax, par_plant, list(alpha=0.1, gamma=1, carbon_allocation = allocation), options))) %>% unnest_wider(acc_original)
+dat_inst_original = tibble(ppfd = seq(1,1200,length.out=50)) %>% mutate(acc_original = purrr::map(.x=ppfd, .f = ~rphydro_instantaneous_numerical(acc_original$vcmax25, acc_original$jmax25, tc, tc, .x, netrad, vpd, co2, pa, fapar, kphio, psi_soil, rdark, vwind, par_plant, list(alpha=0.1, gamma=1), options))) %>% unnest_wider(acc_original)
 
 df_inst_0.75 <- dat_inst_0.75 %>% melt("ppfd")
 df_inst <- dat_inst %>% melt("ppfd")
