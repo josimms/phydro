@@ -82,3 +82,19 @@ n_content_data <- function() {
 }
 
 
+dFdIb_plot <- function() {
+  dFdIb <- function(Ib, alpha, a_jmax, N) {
+    return((alpha * a_jmax * N) / Ib^2)
+  }
+  
+  Ib_range = seq(0.75, 2, length.out = 50)
+  plot(Ib_range, dFdIb(Ib_range, 0.2, 800, 0.02), col = "red", 
+       type = "l", xlab = "Range of Ib values", ylab = "Marginal cost on F of Ib",
+       ylim = c(0, max(dFdIb(Ib_range, 0.2, 800, 0.02))))
+  lines(Ib_range, dFdIb(Ib_range, 0.2, 800, 0.01), col = "orange")
+  lines(Ib_range, dFdIb(Ib_range, 0.2, 800, 0.005), col = "yellow")
+  legend("topright", c("Leaf Nitrogen = 2%", "Leaf Nitrogen = 1%", "Leaf Nitrogen = 0.5%"), 
+         col = c("red", "orange", "yellow"), bty = "n", lty = 1)
+}
+
+
