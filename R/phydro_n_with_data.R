@@ -1,32 +1,39 @@
-check_var1_vs_multiple_var2 <- function(var1, var2_vector, df) {
-  # Check if var1 exists in the dataframe
-  if (!(var1 %in% names(df))) {
-    stop(paste(var1, "column is missing from the dataset."))
-  }
-  
+check_var_combinations <- function(var_vector, df) {
   # Initialize a list to store results
   results <- list()
   
-  for (var2 in var2_vector) {
-    # Check if var2 exists in the dataframe
-    if (!(var2 %in% names(df))) {
-      warning(paste(var2, "column is missing from the dataset. Skipping."))
-      next
-    }
-    
-    # Check if there are non-NA values in both columns
-    valid_data <- sum(!is.na(df[[var1]]) & !is.na(df[[var2]]))
-    
-    if (valid_data == 0) {
-      message(paste("There are no valid (non-NA) pairs of data for", var1, "and", var2, "."))
-    } else {
-      message(paste("Found", valid_data, "valid pairs of data for", var1, "and", var2, "."))
-      results[[var2]] <- valid_data
+  # Check if all variables exist in the dataframe
+  missing_vars <- var_vector[!(var_vector %in% names(df))]
+  if (length(missing_vars) > 0) {
+    warning(paste("The following variables are missing from the dataset:", 
+                  paste(missing_vars, collapse = ", ")))
+    var_vector <- var_vector[var_vector %in% names(df)]
+  }
+  
+  # If less than 2 variables remain, stop the function
+  if (length(var_vector) < 2) {
+    stop("Not enough valid variables to check combinations.")
+  }
+  
+  # Check all possible combinations
+  for (i in 1:(length(var_vector) - 1)) {
+    for (j in (i + 1):length(var_vector)) {
+      var1 <- var_vector[i]
+      var2 <- var_vector[j]
+      
+      # Check if there are non-NA values in both columns
+      valid_data <- sum(!is.na(df[[var1]]) & !is.na(df[[var2]]))
+      
+      if (valid_data > 0) {
+        combination <- paste(var1, var2, sep = " & ")
+        results[[combination]] <- valid_data
+        message(paste("Found", valid_data, "valid pairs of data for", combination))
+      }
     }
   }
   
   if (length(results) == 0) {
-    message("No valid pairs found for any variables.")
+    message("No valid pairs found for any variable combinations.")
     return(NULL)
   } else {
     return(results)
@@ -72,7 +79,7 @@ mesi_import <- function() {
     pivot_wider(names_from = response, values_from = x_c, id_cols = id, values_fn = function(x) {mean(x, na.rn = T)})
   
   # TODO: none of the variables have any matches, so need to fix this!
-  check_var1_vs_multiple_var2("npp", posibilities, df)
+  check_var_combinations(posibilities, df)
   
   ###
   # Boreal
@@ -90,21 +97,82 @@ mesi_import <- function() {
 }
 
 try_data <- function() {
+  ###
   # Read in the data
+  ###
   direct = "/home/josimms/Documents/Austria/TRY_data/"
-  data_try <- data.table::fread(paste0(direct, "35495.txt"))
+  data_try_jmax <- data.table::fread(paste0(direct, "35495.txt"))
+  data_try_vcmax <- data.table::fread(paste0(direct, "35516.txt"))
+  
+  # Combine the data searches
+  data_try <- rbind(data_try_jmax, data_try_vcmax)
+  
+  ###
+  # Retrieve string data
+  #
+  # Some of the string data that is numbers is not included in the Standard Values for some reason. TODO; why?
+  # Created a column that takes the missing data and units
+  ###
+  
+  data_try$ValuesFromString <-  as.numeric(iconv(data_try$OrigValueStr, to = "ASCII//TRANSLIT", sub = "NA"))
+  
+  data_try$ValuesFromString[data_try_jmax$TraitName == "Photosynthesis electron transport capacity (Jmax) per leaf nitrogen (N) content (Farquhar model)"]
+  # Not always the same as the standard values so need to be careful wtih this!
+  
+    ###
+  # Subset for the IIASA programme (boreal forest values)
+  #
+  # NOTE: change this later!
+  ###
+  
+  ## Boreal forest data
+  data_try_boreal <- data_try[data_try$DataName == 'Vegetation type / Biome' & data_try$OrigValueStr %in% c('Boreal'),]
+  data_try_scots_pine <- data_try_boreal[data_try_boreal$AccSpeciesName == "Pinus sylvestris",]
+  
+  boreal_pivot_std <- data_try_boreal %>%
+    mutate(DataName = stringi::stri_trans_general(DataName, "Latin-ASCII")) %>%
+    tidyr::pivot_wider(names_from = DataName, 
+                       values_from = StdValue, 
+                       id_cols = ObservationID, 
+                       values_fn = ~mean(.x, na.rn = T))
+  boreal_pivot_sting <- data_try_boreal %>%
+    mutate(DataName = stringi::stri_trans_general(DataName, "Latin-ASCII")) %>%
+    tidyr::pivot_wider(names_from = DataName, 
+                       values_from = ValuesFromString, 
+                       id_cols = ObservationID, 
+                       values_fn = ~mean(.x, na.rn = T))
+  scots_pine_pivot_std <- data_try %>%
+    mutate(DataName = stringi::stri_trans_general(DataName, "Latin-ASCII")) %>%
+    tidyr::pivot_wider(names_from = DataName, 
+                       values_from = StdValue, 
+                       id_cols = ObservationID, 
+                       values_fn = ~mean(.x, na.rn = T))
+  scots_pine_pivot_string <- data_try %>%
+    mutate(DataName = stringi::stri_trans_general(DataName, "Latin-ASCII")) %>%
+    tidyr::pivot_wider(names_from = DataName, 
+                       values_from = ValuesFromString, 
+                       id_cols = ObservationID, 
+                       values_fn = ~mean(.x, na.rn = T))
+  
+  ###
+  # Similar variable names should be agregated!
+  ###
+  
+  # TODO: aggregate when I have the leaf N data!
+  
+  # Create the plot
+  ggplot() +
+    geom_point(scots_pine_pivot_std, aes(x = `Leaf carbon/nitrogen (C/N) ratio`,
+                                         y = `Photosynthetic electron transport capacity per leaf area at 25C (Jmax25area)`)) +
+    labs(x = "Leaf carbon/nitrogen (C/N) ratio",
+         y = "Photosynthetic electron transport capacity per leaf area at 25°C (Jmax25area)") +
+    theme_minimal() +
+    theme(legend.position = "right")
   
   # Seperate for pine
   data_try_pine <- data_try[data_try$SpeciesName == "Pinus sylvestris",]
-  
-  # Make the column of variables into lots of columns
-  out_data_try_pine_pivot <- data_try_pine %>%
-    filter(TraitName != "") %>% # TODO: check why there are empty TraitName rows
-    # Group by ObservationID and TraitName, and summarize StdValue
-    pivot_wider(names_from = TraitName, values_from = StdValue, id_cols = ObservationID)
-  
   summary(out_data_try_pine_pivot$`Photosynthesis electron transport capacity (Jmax) per leaf nitrogen (N) content (Farquhar model)`)
-  summary(data_try_pine$StdValue[data_try_pine$SpeciesName == "Pinus sylvestris" & data_try_pine$TraitName == "Photosynthesis electron transport capacity (Jmax) per leaf nitrogen (N) content (Farquhar model)" ])
+  summary(data_try_pine$StdValue[data_try_pine$SpeciesName == "Pinus sylvestris" & data_try_pine$TraitName == "Photosynthesis electron transport capacity (Jmax) per leaf nitrogen (N) content (Farquhar model)"])
   
   # TODO: check that this is working properly
   
