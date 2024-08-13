@@ -1,41 +1,114 @@
+check_var1_vs_multiple_var2 <- function(var1, var2_vector, df) {
+  # Check if var1 exists in the dataframe
+  if (!(var1 %in% names(df))) {
+    stop(paste(var1, "column is missing from the dataset."))
+  }
+  
+  # Initialize a list to store results
+  results <- list()
+  
+  for (var2 in var2_vector) {
+    # Check if var2 exists in the dataframe
+    if (!(var2 %in% names(df))) {
+      warning(paste(var2, "column is missing from the dataset. Skipping."))
+      next
+    }
+    
+    # Check if there are non-NA values in both columns
+    valid_data <- sum(!is.na(df[[var1]]) & !is.na(df[[var2]]))
+    
+    if (valid_data == 0) {
+      message(paste("There are no valid (non-NA) pairs of data for", var1, "and", var2, "."))
+    } else {
+      message(paste("Found", valid_data, "valid pairs of data for", var1, "and", var2, "."))
+      results[[var2]] <- valid_data
+    }
+  }
+  
+  if (length(results) == 0) {
+    message("No valid pairs found for any variables.")
+    return(NULL)
+  } else {
+    return(results)
+  }
+}
+
+get_response_description <- function(a, response_variable) {
+  # Check if the required data frame exists in a
+  if (!("mesi_response_variable_abbreviations" %in% names(a))) {
+    stop("The 'mesi_response_variable_abbreviations' data frame is not present in the provided object.")
+  }
+  
+  # Get the description
+  description <- a$mesi_response_variable_abbreviations$description[
+    a$mesi_response_variable_abbreviations$response == response_variable
+  ]
+  
+  # Check if a description was found
+  if (length(description) == 0) {
+    warning(paste("No description found for response variable:", response_variable))
+    return(NULL)
+  } else if (length(description) > 1) {
+    warning(paste("Multiple descriptions found for response variable:", response_variable))
+    return(description)
+  } else {
+    return(description)
+  }
+}
+
 mesi_import <- function() {
   mesi_path = "/home/josimms/Documents/Austria/MESI_data/data"
   
   a <- lapply(list.files(mesi_path, pattern = "mesi", full.names = TRUE), data.table::fread)
   names(a) <- gsub(".csv", "", list.files(mesi_path, pattern = "mesi"))
+  
   # Key!
-  a$mesi_response_variable_abbreviations$description[a$mesi_response_variable_abbreviations$response == "anpp"]
+  get_response_description(a, "npp")
   # Posibilities
-  unique(a$mesi_response_variable_abbreviations$description)
+  posibilities = unique(a$mesi_response_variable_abbreviations$description)
+
+  # Transform the data so the response variables are columns
+  df <- a$mesi_main %>%
+    group_by(id, response) %>%
+    pivot_wider(names_from = response, values_from = x_c, values_fn = mean)
+  
+  # TODO: none of the variables have any matches, so need to fix this!
+  check_var1_vs_multiple_var2("npp", posibilities, df)
   
   ###
   # Boreal
   ###
   boreal_main_data = a$mesi_main[a$mesi_main$vegetation_type == "boreal_forest",]
   
-  # TODO: go through this data when I have the life history model working!
-  unique(boreal_main_data$response)
+  # TODO: need to transform
   
-  ###
-  # Jmax
-  ###
-  main_data_jmax <- a$mesi_main[a$mesi_main$response %in% c("jmax", "vcmax", "leaf_nitrogen_concentration_by_mass"),]
-  main_data_jmax
+  # Posibilities
+  boreal_posibilities = unique(boreal_main_data$response)
+  check_var1_vs_multiple_var2("jmax", boreal_posibilities, boreal_main_data)
   
-  main_data_jmax
-  
-  a$mesi_main[a$mesi_main$response %in% c("leaf_n_area", "jmax"),]
-  
-  plot(a$mesi_main$x_c[a$mesi_main$response == "leaf_n_area"])
-  
-  df = pivot_wider(a$mesi_main, 
-                   names_from = response, 
-                   values_from = x_c,
-                   values_fn = mean)
-  
-  a$mesi_main$x_units[a$mesi_main$response == "leaf_n_mass"]
   
   return(boreal_main_data)
+}
+
+try_data <- function() {
+  # Read in the data
+  direct = "/home/josimms/Documents/Austria/TRY_data/"
+  data_try <- data.table::fread(paste0(direct, "35495.txt"))
+  
+  # Seperate for pine
+  data_try_pine <- data_try[data_try$SpeciesName == "Pinus sylvestris",]
+  
+  # Make the column of variables into lots of columns
+  out_data_try_pine_pivot <- data_try_pine %>%
+    filter(TraitName != "") %>% # TODO: check why there are empty TraitName rows
+    # Group by ObservationID and TraitName, and summarize StdValue
+    # TODO: why are the multiple values here?
+    group_by(ObservationID, TraitName) %>%
+    summarize(StdValue = mean(StdValue, na.rm = TRUE), .groups = "drop") %>%
+    pivot_wider(names_from = TraitName, values_from = StdValue)
+  
+  # TODO: check that this is working properly
+  
 }
 
 n_content_data <- function() {
