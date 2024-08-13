@@ -61,7 +61,7 @@ mesi_import <- function() {
   
   a <- lapply(list.files(mesi_path, pattern = "mesi", full.names = TRUE), data.table::fread)
   names(a) <- gsub(".csv", "", list.files(mesi_path, pattern = "mesi"))
-  
+
   # Key!
   get_response_description(a, "npp")
   # Posibilities
@@ -69,8 +69,7 @@ mesi_import <- function() {
 
   # Transform the data so the response variables are columns
   df <- a$mesi_main %>%
-    group_by(id, response) %>%
-    pivot_wider(names_from = response, values_from = x_c, values_fn = mean)
+    pivot_wider(names_from = response, values_from = x_c, id_cols = id, values_fn = function(x) {mean(x, na.rn = T)})
   
   # TODO: none of the variables have any matches, so need to fix this!
   check_var1_vs_multiple_var2("npp", posibilities, df)
@@ -102,10 +101,10 @@ try_data <- function() {
   out_data_try_pine_pivot <- data_try_pine %>%
     filter(TraitName != "") %>% # TODO: check why there are empty TraitName rows
     # Group by ObservationID and TraitName, and summarize StdValue
-    # TODO: why are the multiple values here?
-    group_by(ObservationID, TraitName) %>%
-    summarize(StdValue = mean(StdValue, na.rm = TRUE), .groups = "drop") %>%
-    pivot_wider(names_from = TraitName, values_from = StdValue)
+    pivot_wider(names_from = TraitName, values_from = StdValue, id_cols = ObservationID)
+  
+  summary(out_data_try_pine_pivot$`Photosynthesis electron transport capacity (Jmax) per leaf nitrogen (N) content (Farquhar model)`)
+  summary(data_try_pine$StdValue[data_try_pine$SpeciesName == "Pinus sylvestris" & data_try_pine$TraitName == "Photosynthesis electron transport capacity (Jmax) per leaf nitrogen (N) content (Farquhar model)" ])
   
   # TODO: check that this is working properly
   
