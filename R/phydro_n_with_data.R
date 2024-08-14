@@ -1,45 +1,3 @@
-check_var_combinations <- function(var_vector, df) {
-  # Initialize a list to store results
-  results <- list()
-  
-  # Check if all variables exist in the dataframe
-  missing_vars <- var_vector[!(var_vector %in% names(df))]
-  if (length(missing_vars) > 0) {
-    warning(paste("The following variables are missing from the dataset:", 
-                  paste(missing_vars, collapse = ", ")))
-    var_vector <- var_vector[var_vector %in% names(df)]
-  }
-  
-  # If less than 2 variables remain, stop the function
-  if (length(var_vector) < 2) {
-    stop("Not enough valid variables to check combinations.")
-  }
-  
-  # Check all possible combinations
-  for (i in 1:(length(var_vector) - 1)) {
-    for (j in (i + 1):length(var_vector)) {
-      var1 <- var_vector[i]
-      var2 <- var_vector[j]
-      
-      # Check if there are non-NA values in both columns
-      valid_data <- sum(!is.na(df[[var1]]) & !is.na(df[[var2]]))
-      
-      if (valid_data > 0) {
-        combination <- paste(var1, var2, sep = " & ")
-        results[[combination]] <- valid_data
-        message(paste("Found", valid_data, "valid pairs of data for", combination))
-      }
-    }
-  }
-  
-  if (length(results) == 0) {
-    message("No valid pairs found for any variable combinations.")
-    return(NULL)
-  } else {
-    return(results)
-  }
-}
-
 get_response_description <- function(a, response_variable) {
   # Check if the required data frame exists in a
   if (!("mesi_response_variable_abbreviations" %in% names(a))) {
@@ -97,15 +55,20 @@ mesi_import <- function() {
 }
 
 try_data <- function() {
+  library(dbplyr)
+  library(ggplot2)
+  
   ###
   # Read in the data
   ###
   direct = "/home/josimms/Documents/Austria/TRY_data/"
   data_try_jmax <- data.table::fread(paste0(direct, "35495.txt"))
   data_try_vcmax <- data.table::fread(paste0(direct, "35516.txt"))
+  data_try_leaf_n <- data.table::fread(paste0(direct, "35525.txt"))
   
   # Combine the data searches
   data_try <- rbind(data_try_jmax, data_try_vcmax)
+  data_try <- rbind(data_try, data_try_leaf_n)
   
   ###
   # Retrieve string data
@@ -119,7 +82,7 @@ try_data <- function() {
   data_try$ValuesFromString[data_try_jmax$TraitName == "Photosynthesis electron transport capacity (Jmax) per leaf nitrogen (N) content (Farquhar model)"]
   # Not always the same as the standard values so need to be careful wtih this!
   
-    ###
+  ###
   # Subset for the IIASA programme (boreal forest values)
   #
   # NOTE: change this later!
@@ -130,51 +93,106 @@ try_data <- function() {
   data_try_scots_pine <- data_try_boreal[data_try_boreal$AccSpeciesName == "Pinus sylvestris",]
   
   boreal_pivot_std <- data_try_boreal %>%
-    mutate(DataName = stringi::stri_trans_general(DataName, "Latin-ASCII")) %>%
+    dplyr::mutate(DataName = stringi::stri_trans_general(DataName, "Latin-ASCII")) %>%
     tidyr::pivot_wider(names_from = DataName, 
                        values_from = StdValue, 
                        id_cols = ObservationID, 
                        values_fn = ~mean(.x, na.rn = T))
   boreal_pivot_sting <- data_try_boreal %>%
-    mutate(DataName = stringi::stri_trans_general(DataName, "Latin-ASCII")) %>%
+    dplyr::mutate(DataName = stringi::stri_trans_general(DataName, "Latin-ASCII")) %>%
     tidyr::pivot_wider(names_from = DataName, 
                        values_from = ValuesFromString, 
                        id_cols = ObservationID, 
                        values_fn = ~mean(.x, na.rn = T))
   scots_pine_pivot_std <- data_try %>%
-    mutate(DataName = stringi::stri_trans_general(DataName, "Latin-ASCII")) %>%
+    dplyr::mutate(DataName = stringi::stri_trans_general(DataName, "Latin-ASCII")) %>%
     tidyr::pivot_wider(names_from = DataName, 
                        values_from = StdValue, 
                        id_cols = ObservationID, 
                        values_fn = ~mean(.x, na.rn = T))
   scots_pine_pivot_string <- data_try %>%
-    mutate(DataName = stringi::stri_trans_general(DataName, "Latin-ASCII")) %>%
+    dplyr::mutate(DataName = stringi::stri_trans_general(DataName, "Latin-ASCII")) %>%
     tidyr::pivot_wider(names_from = DataName, 
                        values_from = ValuesFromString, 
                        id_cols = ObservationID, 
                        values_fn = ~mean(.x, na.rn = T))
   
+  check_var_combinations(names(scots_pine_pivot_std)[-c(1:3)], scots_pine_pivot_std)
+  
   ###
-  # Similar variable names should be agregated!
+  # Similar variable names should be aggregated!
+  ###
+  scots_pine_pivot_std_var_aggregated <- merge_multiple_columns(scots_pine_pivot_std,
+                                                                c("Leaf nitrogen content per total area", "Leaf nitrogen content per area (Narea)"),
+                                                                new_col_names = )
+  scots_pine_pivot_string_var_aggregated
+  
+  
+  ###
+  # Plot the values against leaf N content
   ###
   
-  # TODO: aggregate when I have the leaf N data!
+  # Assuming your dataset includes a column for Vcmax or Vmax similar to Jmax
+  combined_data_vcmax <- scots_pine_pivot_std %>%
+    pivot_longer(cols = c(`Leaf nitrogen content per dry mass (Nmass)`,
+                          `Leaf nitrogen content per area (Narea)`),
+                 names_to = "Nitrogen_Content",
+                 values_to = "Value")
   
-  # Create the plot
-  ggplot() +
-    geom_point(scots_pine_pivot_std, aes(x = `Leaf carbon/nitrogen (C/N) ratio`,
-                                         y = `Photosynthetic electron transport capacity per leaf area at 25C (Jmax25area)`)) +
-    labs(x = "Leaf carbon/nitrogen (C/N) ratio",
-         y = "Photosynthetic electron transport capacity per leaf area at 25°C (Jmax25area)") +
+  # Add a label column to identify which plot it corresponds to
+  combined_data_vcmax$Nitrogen_Content_Label <- ifelse(combined_data_vcmax$Nitrogen_Content == "Leaf nitrogen content per dry mass (Nmass)",
+                                                       "Nmass", "Narea")
+  
+  # Create a new variable to distinguish between Jmax and Vcmax plots
+  combined_data_vcmax$Variable <- "Jmax"
+  combined_data_vcmax_vcmax <- combined_data_vcmax
+  combined_data_vcmax_vcmax$Variable <- "Vcmax"
+  combined_data_vcmax_vcmax$Value <- scots_pine_pivot_std$`Photosynthetic carboxylation capacity (Vcmax, Vmax) per leaf area at leaf temperature`
+  
+  # Combine the datasets
+  final_combined_data <- rbind(combined_data_vcmax, combined_data_vcmax_vcmax)
+  
+  # Now create the plot
+  ggplot(final_combined_data, aes(x = Value, 
+                                  y = ifelse(Variable == "Jmax", 
+                                             `Jmax per leaf area at ambient or leaf temperature`, 
+                                             `Photosynthetic carboxylation capacity (Vcmax, Vmax) per leaf area at leaf temperature`))) +
+    geom_point() +
+    facet_grid(Variable ~ Nitrogen_Content_Label, scales = "free_x") +
+    labs(x = "Leaf Nitrogen Content", 
+         y = "Photosynthetic Parameter per Leaf Area") +
+    coord_cartesian(ylim = c(min(scots_pine_pivot_std$`Photosynthetic electron transport capacity per leaf area at 25C (Jmax25area)`), 
+                             max(scots_pine_pivot_std$`Photosynthetic electron transport capacity per leaf area at 25C (Jmax25area)`))) + 
+    geom_line(data = dat, aes(y = jmax, x = n_leaf, linetype = "Nitrogen Version, Allocation = 1"), color = "red") +
+    geom_line(data = dat_2, aes(y = jmax, x = n_leaf, linetype = "Nitrogen Version, Allocation = 2"), color = "blue") +
+    geom_line(data = dat_1.5, aes(y = jmax, x = n_leaf, linetype = "Nitrogen Version, Allocation = 1.5"), color = "green") +
+    geom_line(data = dat_0.75, aes(y = jmax, x = n_leaf, linetype = "Nitrogen Version, Allocation = 0.75"), color = "orange") +
+    scale_linetype_manual(name = "Nitrogen Allocation", 
+                          values = c("Nitrogen Version, Allocation = 0.75" = "solid",
+                                     "Nitrogen Version, Allocation = 1" = "solid",
+                                     "Nitrogen Version, Allocation = 1.5" = "solid",
+                                     "Nitrogen Version, Allocation = 2" = "solid")) +
     theme_minimal() +
-    theme(legend.position = "right")
+    theme(strip.background = element_rect(color = "white", size = 1),
+          legend.title = element_blank(),
+          legend.position = "right")
   
-  # Seperate for pine
-  data_try_pine <- data_try[data_try$SpeciesName == "Pinus sylvestris",]
-  summary(out_data_try_pine_pivot$`Photosynthesis electron transport capacity (Jmax) per leaf nitrogen (N) content (Farquhar model)`)
-  summary(data_try_pine$StdValue[data_try_pine$SpeciesName == "Pinus sylvestris" & data_try_pine$TraitName == "Photosynthesis electron transport capacity (Jmax) per leaf nitrogen (N) content (Farquhar model)"])
   
-  # TODO: check that this is working properly
+  ###
+  # Plot the root biomass against the photosynthesis
+  ###
+  
+  ###
+  # Plot the photosynthesis against leaf N
+  ###
+  
+  ###
+  # Leaf nitrogen content per dry mass (Nmass) & Leaf nitrogen content per area (Narea)
+  ###
+  
+  ###
+  # Leaf respiration per dry mass and area
+  ###
   
 }
 
