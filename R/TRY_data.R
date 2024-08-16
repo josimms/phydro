@@ -126,13 +126,10 @@ group_and_merge_columns <- function(df) {
   # Make these columns useful
   ###
   
-  df_key_columns$leaf_mass 
+  # df_key_columns$leaf_mass 
   
   
   
   return(df_out)
   
 }
-
-# Example usage
-new_scots_pine_df <- group_and_merge_columns(scots_pine_pivot_std)
