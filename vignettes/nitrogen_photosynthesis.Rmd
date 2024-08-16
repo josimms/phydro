@@ -106,10 +106,11 @@ df <- dat[,cols] %>% melt("ppfd")
 df_2 <- dat_2[,cols] %>% melt("ppfd")
 df_1.5 <- dat_1.5[,cols] %>% melt("ppfd")
 df_0.75 <- dat_0.75[,cols] %>% melt("ppfd")
+#df_original.m <- dat_original[,cols] %>% melt("ppfd")
 df_original.m <- dat_original[,cols[-3]] %>% melt("ppfd")
 
 new_titles <- c(
-  "ppfd" = "PPFD (μmol m⁻² s⁻¹)",
+  "ppfd" = "Photosynthetic Photon Flux Density (μmol m⁻² s⁻¹)",
   "a" = "Assimilation rate\n(A, μmol m⁻² s⁻¹)",
   "n_leaf" = "Nitrogen Percentage\nin Needle (%)",
   "gs" = "Stomatal Conductance\n(gs, mol m⁻² s⁻¹)",
@@ -133,7 +134,7 @@ ggplot() +
         strip.text = element_text(size = 10, face = "bold"),
         axis.title.y = element_blank()) +
   labs(color = "Model Versions and\nInfrastructure Value",
-       x = expression(PPFD~(μmol~m^-2~s^-1))) +
+       x = "Photosynthetic Photon Flux Density, (μmol m⁻² s⁻¹)") +
   facet_wrap(~variable, scales = "free", labeller = labeller(variable = new_titles))
 ```
 
@@ -239,15 +240,15 @@ ggplot(df_carb_allocation, aes(y=value, x=carb_allocation)) +
 ## Formatted weekly response
 
 ```{r}
-cols = c("carb_allocation", "a", "n_leaf", "gs", "jmax")
+cols = c("carb_allocation", "a") #, "n_leaf", "gs", "jmax")
 df_carb_allocation <- dat_carb_allocation[,cols] %>% melt("carb_allocation")
 
 new_titles <- c(
   "carb_allocation" = "Infrastructure",
-  "a" = "Assimilation rate\n(A, μmol m⁻² s⁻¹)",
-  "n_leaf" = "Nitrogen Percentage\nin Needle (%)",
-  "gs" = "Stomatal Conductance\n(gs, mol m⁻² s⁻¹)",
-  "jmax" = "Jmax Parameter\n(Jmax, μmol m⁻² s⁻¹)"
+  "a" = "Assimilation rate\n(A, μmol m⁻² s⁻¹)"
+  #"n_leaf" = "Nitrogen Percentage\nin Needle (%)",
+  #"gs" = "Stomatal Conductance\n(gs, mol m⁻² s⁻¹)",
+  #"jmax" = "Jmax Parameter\n(Jmax, μmol m⁻² s⁻¹)"
 )
 
 ggplot(df_carb_allocation, aes(y=value, x=carb_allocation)) + 
@@ -257,7 +258,7 @@ ggplot(df_carb_allocation, aes(y=value, x=carb_allocation)) +
         legend.title = element_text(face = "bold"),
         strip.text = element_text(size = 10, face = "bold"),
         axis.title.y = element_blank()) +
-  labs(x = "Infrastructure Parameter") +
+  labs(x = expression(paste("Infrastructure Parameter I"[b]))) +
   facet_wrap(~variable, scales = "free", labeller = labeller(variable = new_titles))
 ```
 
