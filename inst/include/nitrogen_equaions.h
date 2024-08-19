@@ -249,7 +249,7 @@ inline jmaxDpsi optimize_midterm_multi_nitrogen(double psi_soil, double nitrogen
   // bounds
   VectorXd lb(q), ub(q);
   lb << -10, 0;
-  ub << log(1), 50;
+  ub << log(100), 50;
   
   // Initial guess
   VectorXd x(q);
@@ -329,6 +329,7 @@ public:
     
     double Q = calc_sapflux(dpsi, psi_soil, par_plant, par_env);
     double gs = calc_gs_from_Q(Q, psi_soil, par_plant, par_env);
+    // TODO: is this the final output for the instantaneous function?
     auto   A = calc_assimilation_limiting_nitrogen(vcmax, jmax, gs, par_photosynth);  // min(Ac, Aj) in umol/m2/s
     
     double costs =  par_cost.gamma * dpsi*dpsi;
