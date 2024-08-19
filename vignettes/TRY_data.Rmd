@@ -16,7 +16,96 @@ library(rphydro)
 library(tidyverse)
 library(ggplot2)
 library(reshape2)
+library(gridExtra)
 ```
+
+## Simulations
+```{r}
+kphio = 0.087;       # quantum yield efficiency
+ppfd = 300;          # umol/m2/s
+ppfd_max = 1200;
+vpd  = 1000;         # Pa
+co2  = 400;          # ppm
+elv  = 0;            # m.a.s.l.
+fapar = 0.7;         # fraction
+rdark = 0.015;
+tc = 25;
+vwind = 3;
+netrad = ppfd/2
+psi_soil = -0.05
+pa = calc_patm(elv)
+nitrogen = 0.02 # TODO: this isn't doing anything at the moment
+
+### New parameters
+  # a_jmax is an estimated value
+  # From the literature a_jmax is just a linear fitting of data rather than parameter that can be explicitly found
+  # 
+  # micro mols m-2 s-2 (g m-2)-1
+a_jmax = 50 # Units
+
+par_cost = list(alpha=0.1, gamma=1, carbon_allocation = 1);
+par_plant = list(conductivity=3e-17, psi50=-2, b=2);
+options = list(gs_method = "GS_IGF", 
+               et_method = "ET_DIFFUSION",
+               ftemp_vj_method = "FV_kumarathunge19",
+               ftemp_rd_method = "FR_heskel16",
+               ftemp_br_method = "FB_atkin15",
+               scale_alpha = F)
+
+allocation = 1.0
+dat = tibble(ppfd = seq(1,1200,length.out=50)) %>% mutate(dat = purrr::map(.x=ppfd, .f = ~rphydro_nitrogen(tc, tc, .x, netrad, vpd, co2, pa, nitrogen, fapar, kphio, psi_soil, rdark, vwind, a_jmax, par_plant, list(alpha=0.1, gamma=1, carbon_allocation = allocation), options))) %>% unnest_wider(dat)
+
+allocation = 2.0
+dat_2 = tibble(ppfd = seq(1,1200,length.out=50)) %>% mutate(dat = purrr::map(.x=ppfd, .f = ~rphydro_nitrogen(tc, tc, .x, netrad, vpd, co2, pa, nitrogen, fapar, kphio, psi_soil, rdark, vwind, a_jmax, par_plant, list(alpha=0.1, gamma=1, carbon_allocation = allocation), options))) %>% unnest_wider(dat)
+
+allocation = 1.5
+dat_1.5 = tibble(ppfd = seq(1,1200,length.out=50)) %>% mutate(dat = purrr::map(.x=ppfd, .f = ~rphydro_nitrogen(tc, tc, .x, netrad, vpd, co2, pa, nitrogen, fapar, kphio, psi_soil, rdark, vwind, a_jmax, par_plant, list(alpha=0.1, gamma=1, carbon_allocation = allocation), options))) %>% unnest_wider(dat)
+
+allocation = 0.75
+dat_0.75 = tibble(ppfd = seq(1,1200,length.out=50)) %>% mutate(dat = purrr::map(.x=ppfd, .f = ~rphydro_nitrogen(tc, tc, .x, netrad, vpd, co2, pa, nitrogen, fapar, kphio, psi_soil, rdark, vwind, a_jmax, par_plant, list(alpha=0.1, gamma=1, carbon_allocation = allocation), options))) %>% unnest_wider(dat)
+
+dat_original = tibble(ppfd = seq(1,1200,length.out=50)) %>% mutate(dat = purrr::map(.x=ppfd, .f = ~rphydro_numerical(tc, tc, .x, netrad, vpd, co2, pa, fapar, kphio, psi_soil, rdark, vwind, par_plant, par_cost, options))) %>% unnest_wider(dat)
+```
+
+## Water changed
+
+```{r}
+# Load necessary libraries
+library(tibble)
+library(dplyr)
+library(purrr)
+
+# Define ranges for PPFD and VPD
+ppfd_values <- seq(300, 1200, length.out = 50)  # 50 steps from 300 to 1200 umol/m2/s
+vpd_values <- seq(1, 2000, length.out = 50)     # 50 steps from 1 to 2000 Pa
+allocation_values <- c(0.75, 1.0, 1.5, 2.0)     # Allocation values
+
+# Create a data frame to store all combinations of PPFD, VPD, and allocation
+combinations <- expand.grid(ppfd = ppfd_values, vpd = vpd_values, allocation = allocation_values)
+
+# Define the function to run the model with error handling
+run_model_safe <- function(ppfd, vpd, allocation) {
+  tryCatch({
+    netrad <- ppfd / 2  # Update net radiation with new PPFD
+    dat <- rphydro_nitrogen(tc, tc, ppfd, netrad, vpd, co2, pa, nitrogen, fapar, kphio, 
+                            psi_soil, rdark, vwind, a_jmax, par_plant, 
+                            list(alpha=0.1, gamma=1, carbon_allocation = allocation), options)
+    return(dat)
+  }, error = function(e) {
+    warning(paste("Error in model at ppfd =", ppfd, ", vpd =", vpd, ", allocation =", allocation))
+    # Return a named list with NA values
+    return(list(A_net = NA, gsw = NA, ci = NA, other_output1 = NA, other_output2 = NA))  # Adjust based on your model's output structure
+  })
+}
+
+# Apply the model to each row of the combinations data frame
+results <- combinations %>%
+  rowwise() %>%
+  mutate(model_output = list(run_model_safe(ppfd, vpd, allocation))) %>%
+  unnest_wider(model_output)
+
+```
+
 
 ## TRY Data 
 
@@ -39,8 +128,8 @@ data_try$ValuesFromString <-  as.numeric(iconv(data_try$OrigValueStr, to = "ASCI
 ###
 # Units should be changed into %
 ###
-#get_response_description(data_try, "Leaf nitrogen content per area (Narea)")
-#get_response_description(data_try, "Leaf nitrogen content per dry mass (Nmass)")
+get_response_description(data_try, "Leaf nitrogen content per area (Narea)")
+get_response_description(data_try, "Leaf nitrogen content per dry mass (Nmass)")
 
 ###
 # Boreal forest data
@@ -76,7 +165,7 @@ scots_pine_pivot_string <- data_try %>%
                      id_cols = ObservationID, 
                      values_fn = ~mean(.x, na.rn = T))
 
-# check_var_combinations(names(out_data_try_pivot)[-1], out_data_try_pivot)
+check_var_combinations(names(out_data_try_pivot)[-1], out_data_try_pivot)
 
 column_names <- c(
     "Leaf maintenance respiration, nitrogen basis, at the given temperature",
@@ -130,32 +219,20 @@ get_response_description(data_try,
                          "Photosynthetic carboxylation capacity (Vcmax, Vmax) per leaf area at 25 C")
 
 ggplot() +
-  geom_point(data = scots_pine_colums_std, aes(x = `Photosynthetic carboxylation capacity (Vcmax, Vmax) per leaf area at 25 C`,
-                                               y = `Photosynthetic electron transport capacity per leaf area at 25C (Jmax25area)`,
-                                               linetype = "Area, 25'C"), col = "black") +
-  geom_point(data = scots_pine_colums_std, aes(x = `Photosynthetic carboxylation capacity (Vcmax, Vmax) per leaf area at leaf temperature`,
-                                             y = `Jmax per leaf area at ambient or leaf temperature`,
+  geom_point(data = scots_pine_colums_std, aes(x = `Jmax per leaf area at ambient or leaf temperature`,
+                                             y = `Photosynthetic carboxylation capacity (Vcmax, Vmax) per leaf area at leaf temperature`,
                                                linetype = "Area, Ambient Temperature"), col = "darkgrey") +
-  geom_point(data = scots_pine_colums_std, aes(x = `Photosynthetic carboxylation capacity (Vcmax, Vmax) per leaf dry mass at 25 C`,  # TODO: why are these too small?
-                                               y = `Photosynthetic electron transport capacity per leaf dry mass at 25C (Jmax25mass)`,
-                                               linetype = "Mass, 25'C"), col = "blue") +
-  geom_point(data = scots_pine_colums_std, aes(x = `Photosynthetic carboxylation capacity (Vcmax, Vmax) per leaf dry mass at ambient temperature`,
-                                               y = `Jmax per dry mass at ambient or leaf temperature`,
-                                               linetype = "Mass, Ambient Temperature"), col = "lightblue") +
-  labs(x = "Vcmax, micro mol m-2 s-1", y = "Jmax, micro mol m-2 s-1") +  # TODO: units?!
-  geom_line(data = dat, aes(y = jmax, x = vcmax, linetype = "Nitrogen Version, Allocation = 1"), color = "gold") +
-  geom_line(data = dat_2, aes(y = jmax, x = vcmax, linetype = "Nitrogen Version, Allocation = 2"), color = "red") +
-  geom_line(data = dat_1.5, aes(y = jmax, x = vcmax, linetype = "Nitrogen Version, Allocation = 1.5"), color = "orange") +
-  geom_line(data = dat_0.75, aes(y = jmax, x = vcmax, linetype = "Nitrogen Version, Allocation = 0.75"), color = "green") +
-  scale_linetype_manual(name = "Nitrogen Allocation", 
-                        values = c("Nitrogen Version, Allocation = 0.75" = "solid",
-                                   "Nitrogen Version, Allocation = 1" = "solid",
-                                   "Nitrogen Version, Allocation = 1.5" = "solid",
-                                   "Nitrogen Version, Allocation = 2" = "solid")) +
+  geom_point(data = scots_pine_colums_std, aes(x = `Photosynthetic electron transport capacity per leaf area at 25C (Jmax25area)`,
+                                               y = `Photosynthetic carboxylation capacity (Vcmax, Vmax) per leaf area at 25 C`,
+                                               linetype = "Area, 25'C"), col = "black") +
+  labs(y = "Vcmax, micro mol m-2 s-1", x = "Jmax, micro mol m-2 s-1") + 
+  geom_point(data = results, aes(y = vcmax25, x = jmax25, color = allocation), size = 2) +
   theme_minimal() +
   theme(strip.background = element_rect(color = "white", size = 1),
         legend.title = element_blank(),
-        legend.position = "right")
+        legend.position = "right") +
+  scale_color_manual(values = c("1" = "green", "0.75" = "darkgreen", "1.5" = "yellow", "2" = "red")) +
+  guides(color = guide_legend(title = "Infrastructure"))
 ```
 
 ## Jmax and leaf N ratio
@@ -164,94 +241,177 @@ ggplot() +
 get_response_description(data_try,
                          "Leaf nitrogen content per dry mass (Nmass)")
 
-ggplot() +
-  geom_point(data = scots_pine_colums_std, aes(x = `Leaf nitrogen content per area (Narea)`,
-                                               y = `Photosynthetic electron transport capacity per leaf area at 25C (Jmax25area)`,
-                                               linetype = "Area, 25'C"), col = "black") +
+# Calculate gradients (this should be done outside the ggplot function)
+calc_gradient <- function(data, x_col, y_col) {
+  model <- lm(data[[y_col]] ~ 0 + data[[x_col]])
+  return(round(coef(model)[1], 2))
+}
+
+gradient_0.75 <- calc_gradient(dat_0.75, "n_leaf", "jmax")
+gradient_1 <- calc_gradient(dat, "n_leaf", "jmax")
+gradient_1.5 <- calc_gradient(dat_1.5, "n_leaf", "jmax")
+gradient_2 <- calc_gradient(dat_2, "n_leaf", "jmax")
+
+gradient_ambient <- calc_gradient(scots_pine_colums_std, 
+                                  "Leaf nitrogen content per area (Narea)", 
+                                  "Jmax per leaf area at ambient or leaf temperature")
+gradient_25C <- calc_gradient(scots_pine_colums_std, 
+                              "Leaf nitrogen content per area (Narea)", 
+                              "Photosynthetic electron transport capacity per leaf area at 25C (Jmax25area)")
+
+# Create colored subtitle
+create_colored_text <- function(label, value, color) {
+  return(paste0("<span style='color:", color, "'>", label, ": ", value, "</span>"))
+}
+
+subtitle <- paste(
+  create_colored_text("Ambient", gradient_ambient, "darkgrey"),
+  create_colored_text("25°C", gradient_25C, "black"),
+  create_colored_text("Allocation 0.75", gradient_0.75, "darkgreen"),
+  create_colored_text("Allocation 1", gradient_1, "green"),
+  create_colored_text("Allocation 1.5", gradient_1.5, "yellow"),
+  create_colored_text("Allocation 2", gradient_2, "red"),
+  sep = " | "
+)
+
+# Now, the ggplot code
+p <- ggplot() +
   geom_point(data = scots_pine_colums_std, aes(x = `Leaf nitrogen content per area (Narea)`,
                                              y = `Jmax per leaf area at ambient or leaf temperature`,
-                                               linetype = "Area, Ambient Temperature"), col = "darkgrey") +
-  geom_point(data = scots_pine_colums_std, aes(x = 0.1*`Leaf nitrogen content per dry mass (Nmass)`,  # TODO: why are these too small?
-                                               y = `Jmax per dry mass at ambient or leaf temperature`,
-                                               linetype = "Mass, Ambient Temperature"), col = "lightblue") +
-  geom_point(data = scots_pine_colums_std, aes(x = 0.1*`Leaf nitrogen content per dry mass (Nmass)`,
-                                               y = `Photosynthetic electron transport capacity per leaf dry mass at 25C (Jmax25mass)`,
-                                               linetype = "Mass, 25'C"), col = "blue") +
-  labs(x = "N per leaf (%)",
-       y = "Jmax, micro mol m-2 s-1") + # TODO: units?!
-  geom_line(data = dat_2, aes(y = jmax, x = 100*n_leaf, linetype = "Nitrogen Version, Allocation = 2"), color = "red") +
-  geom_line(data = dat_1.5, aes(y = jmax, x = 100*n_leaf, linetype = "Nitrogen Version, Allocation = 1.5"), color = "yellow") +
-  geom_line(data = dat, aes(y = jmax, x = 100*n_leaf, linetype = "Nitrogen Version, Allocation = 1"), color = "green") +
-  geom_line(data = dat_0.75, aes(y = jmax, x = 100*n_leaf, linetype = "Nitrogen Version, Allocation = 0.75"), color = "darkgreen") +
-  scale_linetype_manual(name = "Nitrogen Allocation", 
-                        values = c("Nitrogen Version, Allocation = 0.75" = "solid",
-                                   "Nitrogen Version, Allocation = 1" = "solid",
-                                   "Nitrogen Version, Allocation = 1.5" = "solid",
-                                   "Nitrogen Version, Allocation = 2" = "solid")) +
+                                               color = "Ambient Temperature"), shape = 16) +
+  geom_smooth(data = scots_pine_colums_std, aes(x = `Leaf nitrogen content per area (Narea)`,
+                                             y = `Jmax per leaf area at ambient or leaf temperature`,
+                                             color = "Ambient Temperature"), 
+              method = "lm", formula = y ~ 0 + x, se = FALSE, linetype = "dashed") +
+  geom_point(data = scots_pine_colums_std, aes(x = `Leaf nitrogen content per area (Narea)`,
+                                               y = `Photosynthetic electron transport capacity per leaf area at 25C (Jmax25area)`,
+                                               color = "25°C"), shape = 16) +
+  geom_smooth(data = scots_pine_colums_std, aes(x = `Leaf nitrogen content per area (Narea)`,
+                                               y = `Photosynthetic electron transport capacity per leaf area at 25C (Jmax25area)`,
+                                               color = "25°C"), 
+              method = "lm", formula = y ~ 0 + x, se = FALSE, linetype = "dashed") +
+  labs(x = "N per leaf (g m-2)",
+       y = "Jmax, micro mol m-2 s-1",
+       title = "Gradients") +
+  geom_line(data = dat_2, aes(y = jmax25, x = n_leaf, color = "Allocation = 2"), size = 1.2) +
+  geom_line(data = dat_1.5, aes(y = jmax25, x = n_leaf, color = "Allocation = 1.5"), size = 1.2) +
+  geom_line(data = dat, aes(y = jmax25, x = n_leaf, color = "Allocation = 1"), size = 1.2) +
+  geom_line(data = dat_0.75, aes(y = jmax25, x = n_leaf, color = "Allocation = 0.75"), size = 1.2) +
+  scale_color_manual(name = "Lines", 
+                     values = c("Ambient Temperature" = "darkgrey",
+                                "25°C" = "black",
+                                "Allocation = 0.75" = "darkgreen",
+                                "Allocation = 1" = "green",
+                                "Allocation = 1.5" = "yellow",
+                                "Allocation = 2" = "red")) +
   theme_minimal() +
   theme(strip.background = element_rect(color = "white", size = 1),
-        legend.title = element_blank(),
-        legend.position = "right")
-  
+        legend.position = "right",
+        plot.title = element_text(hjust = 0.5)) +
+  coord_cartesian(xlim = c(0, 10))  # This line sets the x-axis limits from 0 to 10
 
+# Create a text grob for the subtitle
+subtitle_grob <- grid::textGrob(subtitle, gp = grid::gpar(fontsize = 8))
+
+# Combine the plot and the subtitle
+grid.arrange(p, subtitle_grob, ncol = 1, heights = c(10, 1))
 ```
 ## Vcmax and leaf C/N ratio
 
 ```{r}
 
+# TODO: the units are not here?
+
+results <- results %>%
+  mutate(allocation = factor(allocation, levels = c(2.0, 1.5, 1.0, 0.75)))
+
+# Now re-run the plot with this factor conversion
 ggplot() +
+  geom_point(data = scots_pine_colums_std, aes(x = `Leaf nitrogen content per area (Narea)`,
+                                               y = `Photosynthetic carboxylation capacity (Vcmax, Vmax) per leaf area at leaf temperature`,
+                                               linetype = "Area, Ambient Temperature"), col = "darkgrey") +
   geom_point(data = scots_pine_colums_std, aes(x = `Leaf nitrogen content per area (Narea)`,
                                                y = `Photosynthetic carboxylation capacity (Vcmax, Vmax) per leaf area at 25 C`,
                                                linetype = "Area, 25'C"), col = "black") +
-  geom_point(data = scots_pine_colums_std, aes(x = `Leaf nitrogen content per area (Narea)`,
-                                             y = `Photosynthetic carboxylation capacity (Vcmax, Vmax) per leaf area at leaf temperature`,
-                                               linetype = "Area, Ambient Temperature"), col = "darkgrey") +
-  geom_point(data = scots_pine_colums_std, aes(x = 0.1*`Leaf nitrogen content per dry mass (Nmass)`,
-                                               y = `Photosynthetic carboxylation capacity (Vcmax, Vmax) per leaf dry mass at ambient temperature`, # TODO: why are these too small?
-                                               linetype = "Mass, Ambient Temperature"), col = "lightblue") +
-  geom_point(data = scots_pine_colums_std, aes(x = 0.1*`Leaf nitrogen content per dry mass (Nmass)`,
-                                               y = `Photosynthetic carboxylation capacity (Vcmax, Vmax) per leaf dry mass at 25 C`,
-                                               linetype = "Mass, 25'C"), col = "blue") +
-  labs(x = "N per leaf (%)",
+  labs(x = "N per leaf (g m-2)",
        y = "Vcmax, micro mol m-2 s-1") +
-  geom_line(data = dat_2, aes(y = vcmax, x = 100*n_leaf, linetype = "Nitrogen Version, Allocation = 2"), color = "red") +
-  geom_line(data = dat_1.5, aes(y = vcmax, x = 100*n_leaf, linetype = "Nitrogen Version, Allocation = 1.5"), color = "yellow") +
-  geom_line(data = dat, aes(y = vcmax, x = 100*n_leaf, linetype = "Nitrogen Version, Allocation = 1"), color = "green") +
-  geom_line(data = dat_0.75, aes(y = vcmax, x = 100*n_leaf, linetype = "Nitrogen Version, Allocation = 0.75"), color = "darkgreen") +
-  scale_linetype_manual(name = "Nitrogen Allocation", 
-                        values = c("Nitrogen Version, Allocation = 0.75" = "solid",
-                                   "Nitrogen Version, Allocation = 1" = "solid",
-                                   "Nitrogen Version, Allocation = 1.5" = "solid",
-                                   "Nitrogen Version, Allocation = 2" = "solid")) +
+  geom_point(data = results, aes(y = vcmax25, x = n_leaf, color = allocation), size = 2) +
   theme_minimal() +
   theme(strip.background = element_rect(color = "white", size = 1),
         legend.title = element_blank(),
-        legend.position = "right")
-  
+        legend.position = "right") +
+  coord_cartesian(xlim = c(0, 17), ylim = c(0, 400)) +
+  scale_color_manual(values = c("1" = "green", "0.75" = "darkgreen", "1.5" = "yellow", "2" = "red")) +
+  guides(color = guide_legend(title = "Infrastructure"))
+
 
 ```
 
-## Belowground to jmax
+## Environmental controls
 
 ```{r}
 
-#    "Fine root dry mass per ground area",
-#    "Belowground plant organ dry mass to leaf dry mass ratio",
+library(ggplot2)
+library(patchwork)
 
-summary(scots_pine_colums_std$`Soil nitrogen content per soil dry mass`)
-
-ggplot() +
-  geom_point(data = scots_pine_colums_std, aes(x = `Soil nitrogen content per soil dry mass`,
-                                               y = `Photosynthetic electron transport capacity per leaf dry mass at 25C (Jmax25mass)`,
-                                               linetype = "Mass, 25'C"), col = "blue") +
-  labs(x = "N per leaf (%)",
-       y = "Jmax, micro mol m-2 s-1") +
-  geom_line(data = df_carb_allocation, aes(y = value, x = carb_allocation), color = "aquamarine4") +
+# First plot
+plot1 <- ggplot(results[results$allocation == 1, ], aes(y = vcmax25, x = n_leaf)) +
+  geom_point(aes(color = ppfd, shape = factor(allocation)), size = 2) +
+  scale_color_gradient(low = "blue", high = "red", name = "PPFD (umol/m2/s)") +
+  scale_shape_manual(values = c(16), name = "Infrastructure", labels = c("1.0")) +
+  labs(x = "N per leaf (g m-2)", y = "Vcmax, micro mol m-2 s-1") +
   theme_minimal() +
   theme(strip.background = element_rect(color = "white", size = 1),
-        legend.title = element_blank(),
+        legend.title = element_text(),  # Ensure legend titles are displayed
         legend.position = "right")
 
+# Second plot
+plot2 <- ggplot(results[results$allocation == 1, ], aes(y = vcmax25, x = n_leaf)) +
+  geom_point(aes(color = vpd, shape = factor(allocation)), size = 2) +
+  scale_color_gradient(low = "blue", high = "red", name = "VPD") +
+  scale_shape_manual(values = c(16), name = "Infrastructure", labels = c("1.0")) +
+  labs(x = "N per leaf (g m-2)", y = "Vcmax, micro mol m-2 s-1") +
+  theme_minimal() +
+  theme(strip.background = element_rect(color = "white", size = 1),
+        legend.title = element_text(),  # Ensure legend titles are displayed
+        legend.position = "right")
+
+# Combine plots side by side
+combined_plot <- plot1 + plot2
+combined_plot
+
+
+
+```
+
+## Soil N
+
+```{r}
+
+plot(scots_pine_colums_std$`Soil N content per ground area`)
+
+ggplot() +
+  geom_point(data = data_try, aes(x = `Jmax per leaf area at ambient or leaf temperature`,
+                                  y = `Photosynthetic carboxylation capacity (Vcmax, Vmax) per leaf area at leaf temperature`,
+                                               linetype = "Area, Ambient Temperature"), col = "darkgrey")
+  
+
+
+```
+
+
+## N max and N area
+
+```{r}
+
+# TODO: Should I add a line here?
+
+ggplot() +
+  geom_point(data = scots_pine_colums_std, aes(x = `Leaf nitrogen content per area (Narea)`,
+                                               y = `Leaf nitrogen content per dry mass (Nmass)`,
+                                               linetype = "Area, 25'C"), col = "black") +
+  labs(x = "N per leaf area",
+       y = "N per leaf mass")
 ```
 
 
