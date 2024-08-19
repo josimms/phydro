@@ -43,7 +43,7 @@ pa = calc_patm(elv)
 nitrogen = 0.02 # TODO: this isn't doing anything at the moment
 
 ### New parameters TODO: justify these!
-a_jmax = 8000
+a_jmax = 50
 
 par_cost = list(alpha=0.1, gamma=1, carbon_allocation = 1);
 par_plant = list(conductivity=3e-17, psi50=-2, b=2);
@@ -112,7 +112,7 @@ df_original.m <- dat_original[,cols[-3]] %>% melt("ppfd")
 new_titles <- c(
   "ppfd" = "Photosynthetic Photon Flux Density (μmol m⁻² s⁻¹)",
   "a" = "Assimilation rate\n(A, μmol m⁻² s⁻¹)",
-  "n_leaf" = "Nitrogen Percentage\nin Needle (%)",
+  "n_leaf" = "Nitrogen Content\nin Needle (g m-2)",
   "gs" = "Stomatal Conductance\n(gs, mol m⁻² s⁻¹)",
   "jmax" = "Jmax Parameter\n(Jmax, μmol m⁻² s⁻¹)"
 )
@@ -240,15 +240,15 @@ ggplot(df_carb_allocation, aes(y=value, x=carb_allocation)) +
 ## Formatted weekly response
 
 ```{r}
-cols = c("carb_allocation", "a") #, "n_leaf", "gs", "jmax")
+cols = c("carb_allocation", "a", "n_leaf", "gs", "jmax")
 df_carb_allocation <- dat_carb_allocation[,cols] %>% melt("carb_allocation")
 
 new_titles <- c(
   "carb_allocation" = "Infrastructure",
-  "a" = "Assimilation rate\n(A, μmol m⁻² s⁻¹)"
-  #"n_leaf" = "Nitrogen Percentage\nin Needle (%)",
-  #"gs" = "Stomatal Conductance\n(gs, mol m⁻² s⁻¹)",
-  #"jmax" = "Jmax Parameter\n(Jmax, μmol m⁻² s⁻¹)"
+  "a" = "Assimilation rate\n(A, μmol m⁻² s⁻¹)",
+  "n_leaf" = "Nitrogen Content\nin Needle (g m-2)",
+  "gs" = "Stomatal Conductance\n(gs, mol m⁻² s⁻¹)",
+  "jmax" = "Jmax Parameter\n(Jmax, μmol m⁻² s⁻¹)"
 )
 
 ggplot(df_carb_allocation, aes(y=value, x=carb_allocation)) + 
@@ -286,6 +286,3 @@ ggplot(df_alpha, aes(y=value, x=alpha)) +
   theme(strip.background = element_rect(color = "white", size = 1))+
   facet_wrap(~variable, scales = "free")
 ```
-
-
-
