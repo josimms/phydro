@@ -246,12 +246,12 @@ dFdIb_plot <- function() {
   }
   
   Ib_range = seq(0.75, 2, length.out = 50)
-  plot(Ib_range, dFdIb(Ib_range, 0.2, 800, 0.02), col = "red", 
+  plot(Ib_range, dFdIb(Ib_range, 0.2, 50, 2), col = "red", 
        type = "l", xlab = "Range of Ib values", ylab = "Marginal cost on F of Ib",
-       ylim = c(0, max(dFdIb(Ib_range, 0.2, 800, 0.02))))
-  lines(Ib_range, dFdIb(Ib_range, 0.2, 800, 0.01), col = "orange")
-  lines(Ib_range, dFdIb(Ib_range, 0.2, 800, 0.005), col = "yellow")
-  legend("topright", c("Leaf Nitrogen = 2%", "Leaf Nitrogen = 1%", "Leaf Nitrogen = 0.5%"), 
+       ylim = c(0, max(dFdIb(Ib_range, 0.2, 50, 2))))
+  lines(Ib_range, dFdIb(Ib_range, 0.2, 50, 1), col = "orange")
+  lines(Ib_range, dFdIb(Ib_range, 0.2, 50, 0.5), col = "yellow")
+  legend("topright", c("Leaf Nitrogen = 2 g m-2", "Leaf Nitrogen = 1 g m-2", "Leaf Nitrogen = 0.5 g m-2"), 
          col = c("red", "orange", "yellow"), bty = "n", lty = 1)
 }
 
