@@ -1,5 +1,3 @@
-#include "nitrogen_equaions.h"
-
 #ifndef PHYDRO_PHYDRO_H
 #define PHYDRO_PHYDRO_H
 
