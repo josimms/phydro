@@ -1,3 +1,6 @@
+#ifndef PHYDRO_NIT_PHOTOSYNTHESIS_H
+#define PHYDRO_NIT_PHOTOSYNTHESIS_H
+
 #include <iostream>
 #include <cmath>
 #include <stdexcept>
@@ -152,3 +155,5 @@ inline ACi calc_assimilation_limiting_nitrogen(double vcmax, double jmax, double
 }
 
 } // end phydro
+
+#endif

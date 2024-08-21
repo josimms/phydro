@@ -1,3 +1,6 @@
+#ifndef PHYDRO_NIT_NUMERICAL_SOLVER_H
+#define PHYDRO_NIT_NUMERICAL_SOLVER_H
+
 #ifdef USINGRCPP
 #include <RcppEigen.h>
 #else
@@ -7,7 +10,7 @@
 #include <LBFGSB.h>
 
 #include "hyd_transpiration.h"
-#include "hyd_photosynthesis.h"
+#include "nit_photosynthesis.h"
 
 using Eigen::VectorXd;
 
@@ -114,3 +117,5 @@ namespace phydro{
   }
 
 } // end namespace
+
+#endif

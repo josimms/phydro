@@ -1,3 +1,5 @@
+#ifndef PHYDRO_NIT_INST_NUMERICAL_SOLVER_H
+#define PHYDRO_NIT_INST_NUMERICAL_SOLVER_H
 
 #ifdef USINGRCPP
 #include <RcppEigen.h>
@@ -11,7 +13,7 @@
 #include <iostream>
 
 #include "hyd_transpiration.h"
-#include "hyd_photosynthesis.h"
+#include "nit_photosynthesis.h"
 
 using Eigen::VectorXd;
 
@@ -110,3 +112,5 @@ inline double optimize_shortterm_multi_nitrogen(double vcmax, double jmax, doubl
 
 
 } // end phydro
+
+#endif
