@@ -18,19 +18,6 @@ using Eigen::VectorXd;
 
 namespace phydro{
 
-class ParCostNitrogen {
-public:
-  double alpha;
-  double gamma;
-  double carbon_allocation;
-  
-  inline ParCostNitrogen(double _a, double _g, double _c){
-    alpha = _a;
-    gamma = _g;
-    carbon_allocation = _c;
-  }
-};
-
 class ParPhotosynthNitrogen{
 public:
   double kmm;
