@@ -153,14 +153,20 @@ boreal_pivot_sting <- data_try_boreal %>%
                      id_cols = ObservationID, 
                      values_fn = ~mean(.x, na.rn = T))
 
-scots_pine_pivot_std <- data_try %>%
+scots_pine_pivot_std_all_cols <- data_try %>%
   dplyr::mutate(DataName = stringi::stri_trans_general(DataName, "Latin-ASCII")) %>%
   tidyr::pivot_wider(names_from = DataName, 
                      values_from = StdValue, 
                      id_cols = ObservationID, 
-                     values_fn = ~mean(.x, na.rn = T))
+                     values_fn = ~mean(.x, na.rm = TRUE))
+  
+# TODO: make this not crash!
+scots_pine_pivot_std_all_cols %>%  
+  dplyr::left_join(data_try %>% 
+                     dplyr::select(ObservationID, AccSpeciesName), 
+                   by = "ObservationID")
 
-scots_pine_pivot_string <- data_try %>%
+scots_pine_pivot_string_all_cols <- data_try %>%
   dplyr::mutate(DataName = stringi::stri_trans_general(DataName, "Latin-ASCII")) %>%
   tidyr::pivot_wider(names_from = DataName, 
                      values_from = ValuesFromString, 
@@ -201,8 +207,8 @@ column_names <- c(
 # Selected columns
 ###
 
-scots_pine_colums_std <- scots_pine_pivot_std[,column_names]
-scots_pine_colums_string <- scots_pine_pivot_string[,column_names]
+scots_pine_colums_std <- scots_pine_pivot_std_all_cols[,column_names]
+scots_pine_colums_string <- scots_pine_pivot_string_all_cols[,column_names]
 
 ```
 
@@ -221,12 +227,12 @@ get_response_description(data_try,
                          "Photosynthetic carboxylation capacity (Vcmax, Vmax) per leaf area at 25 C")
 
 ggplot() +
-  geom_point(data = scots_pine_colums_std, aes(x = `Jmax per leaf area at ambient or leaf temperature`,
-                                             y = `Photosynthetic carboxylation capacity (Vcmax, Vmax) per leaf area at leaf temperature`,
-                                               shape = "Ambient"), col = "darkgrey") +
+  #geom_point(data = scots_pine_colums_std, aes(x = `Jmax per leaf area at ambient or leaf temperature`,
+  #                                           y = `Photosynthetic carboxylation capacity (Vcmax, Vmax) per leaf area at leaf temperature`,
+  #                                             shape = "Ambient"), col = "darkgrey") +
   geom_point(data = scots_pine_colums_std, aes(x = `Photosynthetic electron transport capacity per leaf area at 25C (Jmax25area)`,
                                                y = `Photosynthetic carboxylation capacity (Vcmax, Vmax) per leaf area at 25 C`,
-                                               shape = "25°C"), col = "black") +
+                                               shape = "25°C"), col = '') +
   labs(y = "Vcmax, micro mol m-2 s-1", x = "Jmax, micro mol m-2 s-1") + 
   geom_point(data = results, aes(y = vcmax25, x = jmax25, color = allocation), size = 2) +
   theme_minimal() +
@@ -264,16 +270,16 @@ gradient_25C <- calc_gradient(scots_pine_colums_std,
 
 # Create colored subtitle
 create_colored_text <- function(label, value, color) {
-  return(paste0("<span style='color:", color, "'>", label, "= ", value, "</span>"))
+  return(paste0("<span style='color:", color, "'>", label, " = ", value, "</span>"))
 }
 
 subtitle <- paste(
   create_colored_text("Ambient", gradient_ambient, "darkgrey"),
   create_colored_text("25°C", gradient_25C, "black"),
-  create_colored_text("Infrastructure 0.75", gradient_0.75, "darkgreen"),
-  create_colored_text("Infrastructure 1", gradient_1, "green"),
-  create_colored_text("Infrastructure 1.5", gradient_1.5, "yellow"),
-  create_colored_text("Infrastructure 2", gradient_2, "red"),
+  create_colored_text("Infrastructure, 0.75", gradient_0.75, "darkgreen"),
+  create_colored_text("Infrastructure, 1", gradient_1, "green"),
+  create_colored_text("Infrastructure, 1.5", gradient_1.5, "yellow"),
+  create_colored_text("Infrastructure, 2", gradient_2, "red"),
   sep = " | "
 )
 
