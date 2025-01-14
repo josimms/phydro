@@ -294,9 +294,7 @@ inline PHydroResultNitrogen phydro_nitrogen(double tc, double tg, double ppfd, d
   double     gs = calc_gs_from_Q(e, psi_soil, par_plant, par_env);
   double n_leaf = opt.jmax / par_photosynth.a_jmax;
   auto       aj = calc_assim_light_limited_nitrogen(gs, n_leaf, par_photosynth); 
-  double  vcmax = vcmax_coordinated_numerical_nitrogen(aj.a, aj.ci, par_photosynth); // TODO nitrogen?
-  
-  std::cout << "zeta: " << opt.zeta << "\n";
+  double  vcmax = vcmax_coordinated_numerical_nitrogen(aj.a, aj.ci, par_photosynth);
   
   PHydroResultNitrogen res;
   res.a = aj.a;
