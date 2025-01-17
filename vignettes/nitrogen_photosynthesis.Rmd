@@ -12,7 +12,6 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r}
-library(rphydro)
 library(tidyverse)
 library(ggplot2)
 library(reshape2)
@@ -45,7 +44,9 @@ nitrogen = 1
 ### New parameters TODO: should work with 800!
 a_jmax = 800
 
-par_cost = list(alpha=0.1, gamma=1, root_cost_per_zeta = 1);
+# alpha original value is 0.1
+par_cost_original = list(alpha=0.1, gamma=1, root_cost_per_zeta = 1)
+par_cost = list(alpha=0.02, gamma=1, root_cost_per_zeta = 1);
 par_plant = list(conductivity=3e-17, psi50=-2, b=2);
 options = list(gs_method = "GS_IGF", 
                et_method = "ET_DIFFUSION",
@@ -58,26 +59,27 @@ options = list(gs_method = "GS_IGF",
 ## Acclimating (Weekly) Response
 
 ```{r}
-#allocation = 12
-#dat_very_high = tibble(ppfd = seq(1,1200,length.out=50)) %>% mutate(dat = purrr::map(.x=ppfd, .f = ~rphydro_nitrogen(tc, tc, .x, netrad, vpd, co2, pa, nitrogen, fapar, kphio, psi_soil, rdark, vwind, #a_jmax, par_plant, list(alpha=0.1, gamma=1, root_cost_per_zeta = allocation), options))) %>% unnest_wider(dat)
+allocation = 10
+dat_very_high = tibble(ppfd = seq(9,1200,length.out=50)) %>% mutate(dat = purrr::map(.x=ppfd, .f = ~rphydro_nitrogen(tc, tc, .x, netrad, vpd, co2, pa, nitrogen, fapar, kphio, psi_soil, rdark, vwind, a_jmax, par_plant, list(alpha=0.02, gamma=1, root_cost_per_zeta = allocation), options))) %>% unnest_wider(dat)
 
 allocation = 1.5
-dat_high = tibble(ppfd = seq(1,1200,length.out=50)) %>% mutate(dat = purrr::map(.x=ppfd, .f = ~rphydro_nitrogen(tc, tc, .x, netrad, vpd, co2, pa, nitrogen, fapar, kphio, psi_soil, rdark, vwind, a_jmax, par_plant, list(alpha=0.1, gamma=1, root_cost_per_zeta = allocation), options))) %>% unnest_wider(dat)
+dat_high = tibble(ppfd = seq(1,1200,length.out=50)) %>% mutate(dat = purrr::map(.x=ppfd, .f = ~rphydro_nitrogen(tc, tc, .x, netrad, vpd, co2, pa, nitrogen, fapar, kphio, psi_soil, rdark, vwind, a_jmax, par_plant, list(alpha=0.02, gamma=1, root_cost_per_zeta = allocation), options))) %>% unnest_wider(dat)
 
 allocation = 1.2
-dat_medium = tibble(ppfd = seq(1,1200,length.out=50)) %>% mutate(dat = purrr::map(.x=ppfd, .f = ~rphydro_nitrogen(tc, tc, .x, netrad, vpd, co2, pa, nitrogen, fapar, kphio, psi_soil, rdark, vwind, a_jmax, par_plant, list(alpha=0.1, gamma=1, root_cost_per_zeta = allocation), options))) %>% unnest_wider(dat)
+dat_medium = tibble(ppfd = seq(1,1200,length.out=50)) %>% mutate(dat = purrr::map(.x=ppfd, .f = ~rphydro_nitrogen(tc, tc, .x, netrad, vpd, co2, pa, nitrogen, fapar, kphio, psi_soil, rdark, vwind, a_jmax, par_plant, list(alpha=0.02, gamma=1, root_cost_per_zeta = allocation), options))) %>% unnest_wider(dat)
 
 allocation = 1
-dat_medium_low = tibble(ppfd = seq(1,1200,length.out=50)) %>% mutate(dat = purrr::map(.x=ppfd, .f = ~rphydro_nitrogen(tc, tc, .x, netrad, vpd, co2, pa, nitrogen, fapar, kphio, psi_soil, rdark, vwind, a_jmax, par_plant, list(alpha=0.1, gamma=1, root_cost_per_zeta = allocation), options))) %>% unnest_wider(dat)
+dat_medium_low = tibble(ppfd = seq(1,1200,length.out=50)) %>% mutate(dat = purrr::map(.x=ppfd, .f = ~rphydro_nitrogen(tc, tc, .x, netrad, vpd, co2, pa, nitrogen, fapar, kphio, psi_soil, rdark, vwind, a_jmax, par_plant, list(alpha=0.02, gamma=1, root_cost_per_zeta = allocation), options))) %>% unnest_wider(dat)
 
 allocation = 0.75
-dat_low = tibble(ppfd = seq(1,1200,length.out=50)) %>% mutate(dat = purrr::map(.x=ppfd, .f = ~rphydro_nitrogen(tc, tc, .x, netrad, vpd, co2, pa, nitrogen, fapar, kphio, psi_soil, rdark, vwind, a_jmax, par_plant, list(alpha=0.1, gamma=1, root_cost_per_zeta = allocation), options))) %>% unnest_wider(dat)
+dat_low = tibble(ppfd = seq(1,1200,length.out=50)) %>% mutate(dat = purrr::map(.x=ppfd, .f = ~rphydro_nitrogen(tc, tc, .x, netrad, vpd, co2, pa, nitrogen, fapar, kphio, psi_soil, rdark, vwind, a_jmax, par_plant, list(alpha=0.02, gamma=1, root_cost_per_zeta = allocation), options))) %>% unnest_wider(dat)
 
-dat_original = tibble(ppfd = seq(1,1200,length.out=50)) %>% mutate(dat = purrr::map(.x=ppfd, .f = ~rphydro_numerical(tc, tc, .x, netrad, vpd, co2, pa, fapar, kphio, psi_soil, rdark, vwind, par_plant, par_cost, options))) %>% unnest_wider(dat)
+dat_original = tibble(ppfd = seq(1,1200,length.out=50)) %>% mutate(dat = purrr::map(.x=ppfd, .f = ~rphydro_numerical(tc, tc, .x, netrad, vpd, co2, pa, fapar, kphio, psi_soil, rdark, vwind, par_plant, par_cost_original, options))) %>% unnest_wider(dat)
 ```
 
 
 ```{r}
+df_very_high <- dat_very_high %>% melt("ppfd")
 df_high <- dat_high %>% melt("ppfd")
 df_medium <- dat_medium %>% melt("ppfd")
 df_medium_low <- dat_medium_low %>% melt("ppfd")
@@ -85,12 +87,14 @@ df_low <- dat_low %>% melt("ppfd")
 df_original.m <- dat_original %>% melt("ppfd")
 
 ggplot() + 
+  geom_line(data = df_very_high, aes(y = value, x = ppfd, color = "a = 10")) +
   geom_line(data = df_high, aes(y = value, x = ppfd, color = "a = 1.5")) +
   geom_line(data = df_medium, aes(y = value, x = ppfd, color = "a = 1.2")) +
   geom_line(data = df_medium_low, aes(y = value, x = ppfd, color = "a = 1")) +
   geom_line(data = df_low, aes(y = value, x = ppfd, color = "a = 0.75")) +
   geom_line(data = df_original.m, aes(y = value, x = ppfd, color = "Numeric"), linetype="dotted") +
-  scale_color_manual(values = c("a = 1.5" = "red",
+  scale_color_manual(values = c("a = 10" = "pink",
+                                "a = 1.5" = "red",
                                 "a = 1.2" = "orange",
                                 "a = 1" = "green",
                                 "a = 0.75" = "blue",
@@ -104,6 +108,7 @@ ggplot() +
 
 ```{r}
 cols = c("ppfd", "a", "n_leaf", "gs", "jmax", "zeta")
+df_very_high <- dat_very_high[,cols] %>% melt("ppfd")
 df_high <- dat_high[,cols] %>% melt("ppfd")
 df_medium <- dat_medium[,cols] %>% melt("ppfd")
 df_medium_low <- dat_medium_low[,cols] %>% melt("ppfd")
@@ -121,15 +126,17 @@ new_titles <- c(
 )
 
 ggplot() + 
-  geom_line(data = df_high, aes(y = value, x = ppfd, color = "a = 1.5")) +
-  geom_line(data = df_medium, aes(y = value, x = ppfd, color = "a = 1.2")) +
-  geom_line(data = df_medium_low, aes(y = value, x = ppfd, color = "a = 1")) +
-  geom_line(data = df_low, aes(y = value, x = ppfd, color = "a = 0.75")) +
+  geom_line(data = df_very_high, aes(y = value, x = ppfd, color = "Root cost = 10")) +
+  geom_line(data = df_high, aes(y = value, x = ppfd, color = "Root cost = 1.5")) +
+  geom_line(data = df_medium, aes(y = value, x = ppfd, color = "Root cost = 1.2")) +
+  geom_line(data = df_medium_low, aes(y = value, x = ppfd, color = "Root cost = 1")) +
+  geom_line(data = df_low, aes(y = value, x = ppfd, color = "Root cost = 0.75")) +
   geom_line(data = df_original.m, aes(y = value, x = ppfd, color = "Numeric"), linetype="dotted") +
-  scale_color_manual(values = c("a = 1.5" = "red",
-                                "a = 1.2" = "orange",
-                                "a = 1" = "green",
-                                "a = 0.75" = "blue",
+  scale_color_manual(values = c("Root cost = 10" = "pink",
+                                "Root cost = 1.5" = "red",
+                                "Root cost = 1.2" = "orange",
+                                "Root cost = 1" = "green",
+                                "Root cost = 0.75" = "blue",
                                 "Numeric" = "black")) +
   theme_classic() +
   theme(strip.background = element_rect(color = "white", size = 1),
@@ -145,41 +152,48 @@ ggplot() +
 ## Instantaneous Response
 
 ```{r}
+allocation = 10
+acc_very_high = dat_very_high %>% filter(ppfd == 1200)
+dat_inst_very_high = tibble(ppfd = seq(1,1200,length.out=50)) %>% mutate(dat_very_high = purrr::map(.x=ppfd, .f = ~rphydro_instantaneous_nitrogen(acc_very_high$vcmax25, acc_very_high$jmax25, tc, tc, .x, netrad, vpd, co2, pa, nitrogen, acc_very_high$zeta, fapar, kphio, psi_soil, rdark, vwind, a_jmax, par_plant, list(alpha=0.02, gamma=1, root_cost_per_zeta = allocation), options))) %>% unnest_wider(dat_very_high)
+
 allocation = 1
 acc_medium_low = dat_medium_low %>% filter(ppfd == 1200)
-dat_inst_medium_low = tibble(ppfd = seq(1,1200,length.out=50)) %>% mutate(dat_medium_low = purrr::map(.x=ppfd, .f = ~rphydro_instantaneous_nitrogen(acc_medium_low$vcmax25, acc_medium_low$jmax25, tc, tc, .x, netrad, vpd, co2, pa, nitrogen, acc_medium_low$zeta, fapar, kphio, psi_soil, rdark, vwind, a_jmax, par_plant, list(alpha=0.1, gamma=1, root_cost_per_zeta = allocation), options))) %>% unnest_wider(dat_medium_low)
+dat_inst_medium_low = tibble(ppfd = seq(1,1200,length.out=50)) %>% mutate(dat_medium_low = purrr::map(.x=ppfd, .f = ~rphydro_instantaneous_nitrogen(acc_medium_low$vcmax25, acc_medium_low$jmax25, tc, tc, .x, netrad, vpd, co2, pa, nitrogen, acc_medium_low$zeta, fapar, kphio, psi_soil, rdark, vwind, a_jmax, par_plant, list(alpha=0.02, gamma=1, root_cost_per_zeta = allocation), options))) %>% unnest_wider(dat_medium_low)
 
 allocation = 0.75
 acc_low = dat_low %>% filter(ppfd == 1200)
-dat_inst_low = tibble(ppfd = seq(1,1200,length.out=50)) %>% mutate(dat_low = purrr::map(.x=ppfd, .f = ~rphydro_instantaneous_nitrogen(acc_low$vcmax25, acc_low$jmax25, tc, tc, .x, netrad, vpd, co2, pa, nitrogen, acc$zeta, fapar, kphio, psi_soil, rdark, vwind, a_jmax, par_plant, list(alpha=0.1, gamma=1, root_cost_per_zeta = allocation), options))) %>% unnest_wider(dat_low)
+dat_inst_low = tibble(ppfd = seq(1,1200,length.out=50)) %>% mutate(dat_low = purrr::map(.x=ppfd, .f = ~rphydro_instantaneous_nitrogen(acc_low$vcmax25, acc_low$jmax25, tc, tc, .x, netrad, vpd, co2, pa, nitrogen, acc$zeta, fapar, kphio, psi_soil, rdark, vwind, a_jmax, par_plant, list(alpha=0.02, gamma=1, root_cost_per_zeta = allocation), options))) %>% unnest_wider(dat_low)
 
 allocation = 0.5
 acc_medium = dat_medium %>% filter(ppfd == 1200)
-dat_inst_medium = tibble(ppfd = seq(1,1200,length.out=50)) %>% mutate(dat_medium = purrr::map(.x=ppfd, .f = ~rphydro_instantaneous_nitrogen(acc_medium$vcmax25, acc_medium$jmax25, tc, tc, .x, netrad, vpd, co2, pa, nitrogen, acc$zeta, fapar, kphio, psi_soil, rdark, vwind, a_jmax, par_plant, list(alpha=0.1, gamma=1, root_cost_per_zeta = allocation), options))) %>% unnest_wider(dat_medium)
+dat_inst_medium = tibble(ppfd = seq(1,1200,length.out=50)) %>% mutate(dat_medium = purrr::map(.x=ppfd, .f = ~rphydro_instantaneous_nitrogen(acc_medium$vcmax25, acc_medium$jmax25, tc, tc, .x, netrad, vpd, co2, pa, nitrogen, acc$zeta, fapar, kphio, psi_soil, rdark, vwind, a_jmax, par_plant, list(alpha=0.02, gamma=1, root_cost_per_zeta = allocation), options))) %>% unnest_wider(dat_medium)
 
 allocation = 0.25
 acc_high = dat_high %>% filter(ppfd == 1200)
-dat_inst_high = tibble(ppfd = seq(1,1200,length.out=50)) %>% mutate(dat_high = purrr::map(.x=ppfd, .f = ~rphydro_instantaneous_nitrogen(acc_high$vcmax25, acc_high$jmax25, tc, tc, .x, netrad, vpd, co2, pa, nitrogen, acc$zeta, fapar, kphio, psi_soil, rdark, vwind, a_jmax, par_plant, list(alpha=0.1, gamma=1, root_cost_per_zeta = allocation), options))) %>% unnest_wider(dat_high)
+dat_inst_high = tibble(ppfd = seq(1,1200,length.out=50)) %>% mutate(dat_high = purrr::map(.x=ppfd, .f = ~rphydro_instantaneous_nitrogen(acc_high$vcmax25, acc_high$jmax25, tc, tc, .x, netrad, vpd, co2, pa, nitrogen, acc$zeta, fapar, kphio, psi_soil, rdark, vwind, a_jmax, par_plant, list(alpha=0.02, gamma=1, root_cost_per_zeta = allocation), options))) %>% unnest_wider(dat_high)
 
 acc_original = dat_original %>% filter(ppfd == 1200)
-dat_inst_original = tibble(ppfd = seq(1,1200,length.out=50)) %>% mutate(acc_original = purrr::map(.x=ppfd, .f = ~rphydro_instantaneous_numerical(acc_original$vcmax25, acc_original$jmax25, tc, tc, .x, netrad, vpd, co2, pa, fapar, kphio, psi_soil, rdark, vwind, par_plant, list(alpha=0.1, gamma=1), options))) %>% unnest_wider(acc_original)
+dat_inst_original = tibble(ppfd = seq(1,1200,length.out=50)) %>% mutate(acc_original = purrr::map(.x=ppfd, .f = ~rphydro_instantaneous_numerical(acc_original$vcmax25, acc_original$jmax25, tc, tc, .x, netrad, vpd, co2, pa, fapar, kphio, psi_soil, rdark, vwind, par_plant, list(alpha=0.02, gamma=1), options))) %>% unnest_wider(acc_original)
 
 df_inst_low <- dat_inst_low %>% melt("ppfd")
 df_inst_medium_low <- dat_inst_medium_low %>% melt("ppfd")
 df_inst_medium <- dat_inst_medium %>% melt("ppfd")
 df_inst_high <- dat_inst_high %>% melt("ppfd")
+df_inst_very_high <- dat_inst_very_high %>% melt("ppfd")
 df_original.m.inst <- dat_inst_original %>% melt("ppfd")
 
 ggplot() + 
-  geom_line(data = df_inst_low, aes(y = value, x = ppfd, color = "a = 0.75")) +
-  geom_line(data = df_inst_medium_low, aes(y = value, x = ppfd, color = "a = 1.0")) +
-  geom_line(data = df_inst_medium, aes(y = value, x = ppfd, color = "a = 1.5")) +
-  geom_line(data = df_inst_high, aes(y = value, x = ppfd, color = "a = 2.0")) +
+  geom_line(data = df_inst_very_high, aes(y = value, x = ppfd, color = "Root cost = 10")) +
+  geom_line(data = df_inst_low, aes(y = value, x = ppfd, color = "Root cost = 0.75")) +
+  geom_line(data = df_inst_medium_low, aes(y = value, x = ppfd, color = "Root cost = 1.0")) +
+  geom_line(data = df_inst_medium, aes(y = value, x = ppfd, color = "Root cost = 1.5")) +
+  geom_line(data = df_inst_high, aes(y = value, x = ppfd, color = "Root cost = 2.0")) +
   geom_line(data = df_original.m.inst, aes(y = value, x = ppfd, color = "Numeric"), linetype="dotted") +
-  scale_color_manual(values = c("a = 0.75" = "red", 
-                                "a = 1.0" = "orange", 
-                                "a = 1.5" = "green", 
-                                "a = 2.0" = "blue", 
+  scale_color_manual(values = c("Root cost = 0.75" = "red", 
+                                "Root cost = 1.0" = "orange", 
+                                "Root cost = 1.5" = "green", 
+                                "Root cost = 2.0" = "blue", 
+                                "Root cost = 10" = "pink",
                                 "Numeric" = "black")) +
   theme_classic() +
   theme(strip.background = element_rect(color = "white", size = 1),
@@ -230,7 +244,7 @@ ggplot() +
 ### Testing parameters
 
 ```{r}
-dat_a_per_zeta = tibble(a_per_zeta = seq(0.01, 30, length.out=15)) %>% mutate(dat = purrr::map(.x = a_per_zeta, .f = ~rphydro_nitrogen(tc, tc, ppfd, netrad, vpd, co2, pa, nitrogen, fapar, kphio, psi_soil, rdark, vwind, a_jmax, par_plant, list(alpha=0.1, gamma=1, root_cost_per_zeta = .x), options))) %>% unnest_wider(dat)
+dat_a_per_zeta = tibble(a_per_zeta = seq(0.01, 20, length.out=15)) %>% mutate(dat = purrr::map(.x = a_per_zeta, .f = ~rphydro_nitrogen(tc, tc, ppfd, netrad, vpd, co2, pa, nitrogen, fapar, kphio, psi_soil, rdark, vwind, a_jmax, par_plant, list(alpha=0.02, gamma=1, root_cost_per_zeta = .x), options))) %>% unnest_wider(dat)
 
 df_a_per_zeta <- dat_a_per_zeta %>% melt("a_per_zeta")
 
@@ -264,7 +278,7 @@ ggplot(df_a_per_zeta, aes(y=value, x=a_per_zeta)) +
         strip.text = element_text(size = 10, face = "bold"),
         axis.title.y = element_blank(),
         plot.title = element_text(hjust = 0, face = "bold")) +  # Added this line for the figure label
-  labs(x = expression(paste("cost of roots per zeta, a"))) +
+  labs(x = expression(paste("cost of roots per zeta"))) +
   facet_wrap(~variable, scales = "free", labeller = labeller(variable = new_titles))
 ```
 
@@ -297,7 +311,7 @@ ggplot(df_alpha, aes(y=value, x=alpha)) +
 
 ```{r}
 
-dat_nitrogen = tibble(nitrogen = seq(0.01,0.1,length.out=50)) %>% mutate(dat = purrr::map(.x = nitrogen, .f = ~rphydro_nitrogen(tc, tc, 500, netrad, vpd, co2, pa, .x, fapar, kphio, psi_soil, rdark, vwind, a_jmax, par_plant, list(alpha=.x, gamma=1, root_cost_per_zeta = 1), options))) %>% unnest_wider(dat)
+dat_nitrogen = tibble(nitrogen = seq(0.01,0.1,length.out=50)) %>% mutate(dat = purrr::map(.x = nitrogen, .f = ~rphydro_nitrogen(tc, tc, ppfd, netrad, vpd, co2, pa, .x, fapar, kphio, psi_soil, rdark, vwind, a_jmax, par_plant, list(alpha=0.02, gamma=1, root_cost_per_zeta = 1), options))) %>% unnest_wider(dat)
 
 cols = c("nitrogen", "a", "n_leaf", "gs", "jmax")
 df_nitrogen <- dat_nitrogen[,cols] %>% melt("nitrogen")
@@ -322,5 +336,163 @@ ggplot(df_nitrogen, aes(y=value, x=nitrogen)) +
   labs(x = expression(paste("Leaf Nitrogen Store (g g-1)"))) +
   facet_wrap(~variable, scales = "free", labeller = labeller(variable = new_titles))
 ```
+# Finding parameters
 
+```{r}
+# Set up parameters
+a_per_zeta_values <- seq(0.02, 20, length.out = 1000)  
+alpha_values <- seq(0.04, 1, length.out = 1000)     
+param_grid <- expand.grid(a_per_zeta = a_per_zeta_values, alpha = alpha_values)
 
+# Set chunk size and calculate number of chunks
+chunk_size <- 10000  # You can adjust this based on your memory
+n_chunks <- ceiling(nrow(param_grid) / chunk_size)
+
+# Initialize results list
+results_list <- vector("list", n_chunks)
+
+for(chunk in 1:n_chunks) {
+  start_idx <- ((chunk-1) * chunk_size) + 1
+  end_idx <- min(chunk * chunk_size, nrow(param_grid))
+  
+  cat(sprintf("Processing chunk %d of %d\n", chunk, n_chunks))
+  
+  chunk_results <- parallel::mclapply(start_idx:end_idx, function(i) {
+    tryCatch({
+      params <- list(
+        kphio = 0.087, ppfd = 300, ppfd_max = 1200,
+        vpd = 1000, co2 = 400, elv = 0, fapar = 0.7,
+        rdark = 0.015, tc = 25, vwind = 3, netrad = 150,
+        psi_soil = -0.05, nitrogen = 1, a_jmax = 800
+      )
+      
+      par_plant <- list(conductivity=3e-17, psi50=-2, b=2)
+      options <- list(
+        gs_method = "GS_IGF",
+        et_method = "ET_DIFFUSION",
+        ftemp_vj_method = "FV_kumarathunge19",
+        ftemp_rd_method = "FR_heskel16",
+        ftemp_br_method = "FB_atkin15",
+        scale_alpha = FALSE
+      )
+      
+      pa <- calc_patm(params$elv)
+      
+      par_cost_original <- list(alpha=0.1, gamma=1, root_cost_per_zeta = 1)
+      original <- as.data.frame(rphydro_numerical(
+        params$tc, params$tc, params$ppfd, params$netrad, params$vpd, 
+        params$co2, pa, params$fapar, params$kphio, params$psi_soil, 
+        params$rdark, params$vwind, par_plant, par_cost_original, options
+      ))
+      
+      current_params <- param_grid[i, ]
+      result <- as.data.frame(rphydro_nitrogen(
+        params$tc, params$tc, params$ppfd, params$netrad, params$vpd, 
+        params$co2, pa, params$nitrogen, params$fapar, params$kphio, 
+        params$psi_soil, params$rdark, params$vwind, params$a_jmax, 
+        par_plant, list(
+          alpha=current_params$alpha, 
+          gamma=1, 
+          root_cost_per_zeta = current_params$a_per_zeta
+        ), 
+        options
+      ))
+      
+      result$rmse <- sqrt(sum((result[,-c(6, 10)] - original)^2)/20)
+      result$alpha <- current_params$alpha
+      result$a_per_zeta <- current_params$a_per_zeta
+      result$dist_zeta <- abs(0.2 - result$zeta)
+      result$dist_a <- abs(original$a - result$zeta)
+      
+      return(result)
+    }, error = function(e) {
+      return(NULL)  # Return NULL instead of error message
+    })
+  }, mc.cores = parallel::detectCores()-2)
+  
+  # Filter out NULL results and combine valid results
+  valid_results <- chunk_results[!sapply(chunk_results, is.null)]
+  if(length(valid_results) > 0) {
+    results_list[[chunk]] <- do.call(rbind, valid_results)
+  }
+  
+  # Clean up memory
+  gc()
+}
+
+# Remove any NULL elements from results_list
+results_list <- results_list[!sapply(results_list, is.null)]
+
+# Combine all results
+fitting_parameters_no_error_all_both <- do.call(rbind, results_list)
+```
+
+# Plots
+```{r}
+plot(fitting_parameters_no_error_all_both$a_per_zeta, 
+     fitting_parameters_no_error_all_both$alpha,
+     xlab = "Root cost", ylab = "alpha")
+
+library(ggplot2)
+library(gridExtra)
+
+# Create the plots
+p1 <- ggplot(fitting_parameters_no_error_all_both, 
+             aes(x = a_per_zeta, y = a, color = alpha)) +
+  geom_point() +
+  scale_color_viridis_c() +
+  labs(x = "Root cost", y = "a") +
+  theme_minimal()
+
+p2 <- ggplot(fitting_parameters_no_error_all_both, 
+             aes(x = alpha, y = a, color = a_per_zeta)) +
+  geom_point() +
+  scale_color_viridis_c() +
+  labs(x = "alpha", y = "a") +
+  theme_minimal()
+
+p3 <- ggplot(fitting_parameters_no_error_all_both, 
+             aes(x = a_per_zeta, y = e, color = alpha)) +
+  geom_point() +
+  scale_color_viridis_c() +
+  labs(x = "Root cost", y = "e") +
+  theme_minimal()
+
+p4 <- ggplot(fitting_parameters_no_error_all_both, 
+             aes(x = alpha, y = e, color = a_per_zeta)) +
+  geom_point() +
+  scale_color_viridis_c() +
+  labs(x = "alpha", y = "e") +
+  theme_minimal()
+
+p5 <- ggplot(fitting_parameters_no_error_all_both, 
+             aes(x = a_per_zeta, y = n_leaf, color = alpha)) +
+  geom_point() +
+  scale_color_viridis_c() +
+  labs(x = "Root cost", y = "N leaf") +
+  theme_minimal()
+
+p6 <- ggplot(fitting_parameters_no_error_all_both, 
+             aes(x = alpha, y = n_leaf, color = a_per_zeta)) +
+  geom_point() +
+  scale_color_viridis_c() +
+  labs(x = "alpha", y = "N leaf") +
+  theme_minimal()
+
+p7 <- ggplot(fitting_parameters_no_error_all_both, 
+             aes(x = a_per_zeta, y = zeta, color = alpha)) +
+  geom_point() +
+  scale_color_viridis_c() +
+  labs(x = "Root cost", y = "zeta") +
+  theme_minimal()
+
+p8 <- ggplot(fitting_parameters_no_error_all_both, 
+             aes(x = alpha, y = zeta, color = a_per_zeta)) +
+  geom_point() +
+  scale_color_viridis_c() +
+  labs(x = "alpha", y = "zeta") +
+  theme_minimal()
+
+# Arrange all plots in a 4x2 grid
+grid.arrange(p1, p2, p3, p4, p5, p6, p7, p8, ncol = 2)
+```
