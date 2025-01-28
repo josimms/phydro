@@ -44,35 +44,39 @@ nitrogen = 1
 ### New parameters TODO: should work with 800!
 a_jmax = 800
 
-# alpha original value is 0.1
-par_cost_original = list(alpha=0.1, gamma=1, root_cost_per_zeta = 1)
-par_cost = list(alpha=0.02, gamma=1, root_cost_per_zeta = 1);
+# biomass original value is 0.1
+par_cost_original = list(biomass=0.1, gamma=1, root_cost_per_zeta = 1)
+par_cost = list(biomass=0.01, gamma=1, root_cost_per_zeta = 1);
 par_plant = list(conductivity=3e-17, psi50=-2, b=2);
 options = list(gs_method = "GS_IGF", 
                et_method = "ET_DIFFUSION",
                ftemp_vj_method = "FV_kumarathunge19",
                ftemp_rd_method = "FR_heskel16",
                ftemp_br_method = "FB_atkin15",
-               scale_alpha = F)
+               scale_biomass = F)
 ```
 
 ## Acclimating (Weekly) Response
 
 ```{r}
 allocation = 10
-dat_very_high = tibble(ppfd = seq(9,1200,length.out=50)) %>% mutate(dat = purrr::map(.x=ppfd, .f = ~rphydro_nitrogen(tc, tc, .x, netrad, vpd, co2, pa, nitrogen, fapar, kphio, psi_soil, rdark, vwind, a_jmax, par_plant, list(alpha=0.02, gamma=1, root_cost_per_zeta = allocation), options))) %>% unnest_wider(dat)
+root_biomass = 1
+dat_very_high = tibble(ppfd = seq(9,1200,length.out=50)) %>% mutate(dat = purrr::map(.x=ppfd, .f = ~rphydro_nitrogen(tc, tc, .x, netrad, vpd, co2, pa, nitrogen, fapar, kphio, psi_soil, rdark, vwind, a_jmax, par_plant, list(biomass=0.02, gamma=1, root_cost_per_zeta = allocation, root_biomass = root_biomass), options))) %>% unnest_wider(dat)
 
 allocation = 1.5
-dat_high = tibble(ppfd = seq(1,1200,length.out=50)) %>% mutate(dat = purrr::map(.x=ppfd, .f = ~rphydro_nitrogen(tc, tc, .x, netrad, vpd, co2, pa, nitrogen, fapar, kphio, psi_soil, rdark, vwind, a_jmax, par_plant, list(alpha=0.02, gamma=1, root_cost_per_zeta = allocation), options))) %>% unnest_wider(dat)
+root_biomass = 1
+dat_high = tibble(ppfd = seq(1,1200,length.out=50)) %>% mutate(dat = purrr::map(.x=ppfd, .f = ~rphydro_nitrogen(tc, tc, .x, netrad, vpd, co2, pa, nitrogen, fapar, kphio, psi_soil, rdark, vwind, a_jmax, par_plant, list(biomass=0.02, gamma=1, root_cost_per_zeta = allocation, root_biomass = root_biomass), options))) %>% unnest_wider(dat)
 
 allocation = 1.2
-dat_medium = tibble(ppfd = seq(1,1200,length.out=50)) %>% mutate(dat = purrr::map(.x=ppfd, .f = ~rphydro_nitrogen(tc, tc, .x, netrad, vpd, co2, pa, nitrogen, fapar, kphio, psi_soil, rdark, vwind, a_jmax, par_plant, list(alpha=0.02, gamma=1, root_cost_per_zeta = allocation), options))) %>% unnest_wider(dat)
+dat_medium = tibble(ppfd = seq(1,1200,length.out=50)) %>% mutate(dat = purrr::map(.x=ppfd, .f = ~rphydro_nitrogen(tc, tc, .x, netrad, vpd, co2, pa, nitrogen, fapar, kphio, psi_soil, rdark, vwind, a_jmax, par_plant, list(biomass=0.02, gamma=1, root_cost_per_zeta = allocation, root_biomass = root_biomass), options))) %>% unnest_wider(dat)
 
 allocation = 1
-dat_medium_low = tibble(ppfd = seq(1,1200,length.out=50)) %>% mutate(dat = purrr::map(.x=ppfd, .f = ~rphydro_nitrogen(tc, tc, .x, netrad, vpd, co2, pa, nitrogen, fapar, kphio, psi_soil, rdark, vwind, a_jmax, par_plant, list(alpha=0.02, gamma=1, root_cost_per_zeta = allocation), options))) %>% unnest_wider(dat)
+root_biomass = 1
+dat_medium_low = tibble(ppfd = seq(1,1200,length.out=50)) %>% mutate(dat = purrr::map(.x=ppfd, .f = ~rphydro_nitrogen(tc, tc, .x, netrad, vpd, co2, pa, nitrogen, fapar, kphio, psi_soil, rdark, vwind, a_jmax, par_plant, list(biomass=0.02, gamma=1, root_cost_per_zeta = allocation, root_biomass = root_biomass), options))) %>% unnest_wider(dat)
 
 allocation = 0.75
-dat_low = tibble(ppfd = seq(1,1200,length.out=50)) %>% mutate(dat = purrr::map(.x=ppfd, .f = ~rphydro_nitrogen(tc, tc, .x, netrad, vpd, co2, pa, nitrogen, fapar, kphio, psi_soil, rdark, vwind, a_jmax, par_plant, list(alpha=0.02, gamma=1, root_cost_per_zeta = allocation), options))) %>% unnest_wider(dat)
+root_biomass = 1
+dat_low = tibble(ppfd = seq(1,1200,length.out=50)) %>% mutate(dat = purrr::map(.x=ppfd, .f = ~rphydro_nitrogen(tc, tc, .x, netrad, vpd, co2, pa, nitrogen, fapar, kphio, psi_soil, rdark, vwind, a_jmax, par_plant, list(biomass=0.02, gamma=1, root_cost_per_zeta = allocation, root_biomass = root_biomass), options))) %>% unnest_wider(dat)
 
 dat_original = tibble(ppfd = seq(1,1200,length.out=50)) %>% mutate(dat = purrr::map(.x=ppfd, .f = ~rphydro_numerical(tc, tc, .x, netrad, vpd, co2, pa, fapar, kphio, psi_soil, rdark, vwind, par_plant, par_cost_original, options))) %>% unnest_wider(dat)
 ```
@@ -147,6 +151,141 @@ ggplot() +
   labs(color = "Model Versions and\nInfrastructure Value",
        x = "Photosynthetic Photon Flux Density, (μmol m⁻² s⁻¹)") +  # Added the figure label here
   facet_wrap(~variable, scales = "free", labeller = labeller(variable = new_titles))
+```
+# Including root biomass
+
+```{r}
+allocation = 5
+root_biomass = 1
+dat_alloca_high_rb_high = tibble(ppfd = seq(9,1200,length.out=50)) %>% mutate(dat = purrr::map(.x=ppfd, .f = ~rphydro_nitrogen(tc, tc, .x, netrad, vpd, co2, pa, nitrogen, fapar, kphio, psi_soil, rdark, vwind, a_jmax, par_plant, list(alpha=0.02, gamma=1, root_cost_per_zeta = allocation, root_biomass = root_biomass), options))) %>% unnest_wider(dat)
+
+allocation = 5
+root_biomass = 2
+dat_alloca_high_rb_low = tibble(ppfd = seq(9,1200,length.out=50)) %>% mutate(dat = purrr::map(.x=ppfd, .f = ~rphydro_nitrogen(tc, tc, .x, netrad, vpd, co2, pa, nitrogen, fapar, kphio, psi_soil, rdark, vwind, a_jmax, par_plant, list(alpha=0.02, gamma=1, root_cost_per_zeta = allocation, root_biomass = root_biomass), options))) %>% unnest_wider(dat)
+
+allocation = 2.5
+root_biomass = 2
+dat_alloca_low_rb_high = tibble(ppfd = seq(9,1200,length.out=50)) %>% mutate(dat = purrr::map(.x=ppfd, .f = ~rphydro_nitrogen(tc, tc, .x, netrad, vpd, co2, pa, nitrogen, fapar, kphio, psi_soil, rdark, vwind, a_jmax, par_plant, list(alpha=0.02, gamma=1, root_cost_per_zeta = allocation, root_biomass = root_biomass), options))) %>% unnest_wider(dat)
+
+allocation = 2.5
+root_biomass = 1
+dat_alloca_low_rb_low = tibble(ppfd = seq(9,1200,length.out=50)) %>% mutate(dat = purrr::map(.x=ppfd, .f = ~rphydro_nitrogen(tc, tc, .x, netrad, vpd, co2, pa, nitrogen, fapar, kphio, psi_soil, rdark, vwind, a_jmax, par_plant, list(alpha=0.02, gamma=1, root_cost_per_zeta = allocation, root_biomass = root_biomass), options))) %>% unnest_wider(dat)
+
+cols = c("ppfd", "a", "n_leaf", "gs", "jmax", "zeta")
+df_alloca_high_rb_high <- dat_alloca_high_rb_high[,cols] %>% melt("ppfd")
+df_alloca_high_rb_low <- dat_alloca_high_rb_low[,cols] %>% melt("ppfd")
+df_alloca_low_rb_high <- dat_alloca_low_rb_high[,cols] %>% melt("ppfd")
+df_alloca_low_rb_low <- dat_alloca_low_rb_low[,cols] %>% melt("ppfd")
+
+new_titles <- c(
+  "ppfd" = "Photosynthetic Photon Flux Density (μmol m⁻² s⁻¹)",
+  "a" = "Assimilation rate\n(A, μmol m⁻² s⁻¹)",
+  "n_leaf" = "Nitrogen Content\nin Needle (g g-2)",
+  "gs" = "Stomatal Conductance\n(gs, mol m⁻² s⁻¹)",
+  "jmax" = "Jmax Parameter\n(Jmax, μmol m⁻² s⁻¹)",
+  "zeta" = "zeta, ratio"
+)
+
+ggplot() + 
+  geom_line(data = df_alloca_high_rb_high, aes(y = value, x = ppfd, color = "Root cost = high, biomass = high")) +
+  geom_line(data = df_alloca_high_rb_low, aes(y = value, x = ppfd, color = "Root cost = high, biomass = low")) +
+  geom_line(data = df_alloca_low_rb_high, aes(y = value, x = ppfd, color = "Root cost = low, biomass = high")) +
+  geom_line(data = df_alloca_low_rb_low, aes(y = value, x = ppfd, color = "Root cost = low, biomass = low")) +
+  geom_line(data = df_original.m, aes(y = value, x = ppfd, color = "Numeric"), linetype="dotted") +
+  scale_color_manual(values = c("Root cost = high, biomass = high" = "red",
+                                "Root cost = high, biomass = low" = "orange",
+                                "Root cost = low, biomass = high" = "green",
+                                "Root cost = low, biomass = low" = "blue",
+                                "Numeric" = "black")) +
+  theme_classic() +
+  theme(strip.background = element_rect(color = "white", size = 1),
+        legend.title = element_text(face = "bold"),
+        strip.text = element_text(size = 10, face = "bold"),
+        axis.title.y = element_blank(),
+        plot.title = element_text(hjust = 0, face = "bold")) +  # Added this line for the figure label
+  labs(color = "Model Versions and\nInfrastructure Value",
+       x = "Photosynthetic Photon Flux Density, (μmol m⁻² s⁻¹)") +  # Added the figure label here
+  facet_wrap(~variable, scales = "free", labeller = labeller(variable = new_titles))
+```
+
+## Weekly response with respect to temperature and VPD
+
+```{r}
+# Temperature
+allocation = 10
+dat_very_high_temp = tibble(ta = seq(-5,20,length.out=50)) %>% mutate(dat = purrr::map(.x=ta, .f = ~rphydro_nitrogen(.x, tc, ppfd, netrad, vpd, co2, pa, nitrogen, fapar, kphio, psi_soil, rdark, vwind, a_jmax, par_plant, list(alpha=0.02, gamma=1, root_cost_per_zeta = allocation), options))) %>% unnest_wider(dat)
+
+allocation = 1
+dat_low_temp = tibble(ta = seq(-5,20,length.out=50)) %>% mutate(dat = purrr::map(.x=ta, .f = ~rphydro_nitrogen(.x, tc, ppfd, netrad, vpd, co2, pa, nitrogen, fapar, kphio, psi_soil, rdark, vwind, a_jmax, par_plant, list(alpha=0.02, gamma=1, root_cost_per_zeta = allocation), options))) %>% unnest_wider(dat)
+
+# VPD
+allocation = 10
+dat_very_high_vpd = tibble(vpd = seq(100,1000,length.out=50)) %>% mutate(dat = purrr::map(.x=vpd, .f = ~rphydro_nitrogen(tc, tc, ppfd, netrad, .x, co2, pa, nitrogen, fapar, kphio, psi_soil, rdark, vwind, a_jmax, par_plant, list(alpha=0.02, gamma=1, root_cost_per_zeta = allocation), options))) %>% unnest_wider(dat)
+
+allocation = 1
+dat_low_vpd = tibble(vpd = seq(100,1000,length.out=50)) %>% mutate(dat = purrr::map(.x=vpd, .f = ~rphydro_nitrogen(tc, tc, ppfd, netrad, .x, co2, pa, nitrogen, fapar, kphio, psi_soil, rdark, vwind, a_jmax, par_plant, list(alpha=0.02, gamma=1, root_cost_per_zeta = allocation), options))) %>% unnest_wider(dat)
+
+```
+
+```{r}
+cols = c("ta", "a", "n_leaf", "gs", "jmax", "zeta")
+df_very_high_temp <- dat_very_high_temp[,cols] %>% melt("ta")
+df_low_temp <- dat_low_temp[,cols] %>% melt("ta")
+
+new_titles <- c(
+  "ta" = "Air Temperature, 'C",
+  "a" = "Assimilation rate\n(A, μmol m⁻² s⁻¹)",
+  "n_leaf" = "Nitrogen Content\nin Needle (g g-2)",
+  "gs" = "Stomatal Conductance\n(gs, mol m⁻² s⁻¹)",
+  "jmax" = "Jmax Parameter\n(Jmax, μmol m⁻² s⁻¹)",
+  "zeta" = "zeta, ratio"
+)
+
+ggplot() + 
+  geom_line(data = df_very_high_temp, aes(y = value, x = ta, color = "Root cost = 10")) +
+  geom_line(data = df_low_temp, aes(y = value, x = ta, color = "Root cost = 1")) +
+  scale_color_manual(values = c("Root cost = 10" = "pink",
+                                "Root cost = 1" = "green")) +
+  theme_classic() +
+  theme(strip.background = element_rect(color = "white", size = 1),
+        legend.title = element_text(face = "bold"),
+        strip.text = element_text(size = 10, face = "bold"),
+        axis.title.y = element_blank(),
+        plot.title = element_text(hjust = 0, face = "bold")) +  # Added this line for the figure label
+  labs(color = "Model Versions and\nInfrastructure Value",
+       x = "Air Temperature, 'C") +  # Added the figure label here
+  facet_wrap(~variable, scales = "free", labeller = labeller(variable = new_titles))
+
+```
+```{r}
+cols = c("vpd", "a", "n_leaf", "gs", "jmax", "zeta")
+df_very_high_vpd <- dat_very_high_vpd[,cols] %>% melt("vpd")
+df_low_vpd <- dat_low_vpd[,cols] %>% melt("vpd")
+
+new_titles <- c(
+  "vpd" = "VPD, Pa",
+  "a" = "Assimilation rate\n(A, μmol m⁻² s⁻¹)",
+  "n_leaf" = "Nitrogen Content\nin Needle (g g-2)",
+  "gs" = "Stomatal Conductance\n(gs, mol m⁻² s⁻¹)",
+  "jmax" = "Jmax Parameter\n(Jmax, μmol m⁻² s⁻¹)",
+  "zeta" = "zeta, ratio"
+)
+
+ggplot() + 
+  geom_line(data = df_very_high_vpd, aes(y = value, x = vpd, color = "Root cost = 10")) +
+  geom_line(data = df_low_vpd, aes(y = value, x = vpd, color = "Root cost = 1")) +
+  scale_color_manual(values = c("Root cost = 10" = "pink",
+                                "Root cost = 1" = "green")) +
+  theme_classic() +
+  theme(strip.background = element_rect(color = "white", size = 1),
+        legend.title = element_text(face = "bold"),
+        strip.text = element_text(size = 10, face = "bold"),
+        axis.title.y = element_blank(),
+        plot.title = element_text(hjust = 0, face = "bold")) +  # Added this line for the figure label
+  labs(color = "Model Versions and\nInfrastructure Value",
+       x = "VPD, Pa") +  # Added the figure label here
+  facet_wrap(~variable, scales = "free", labeller = labeller(variable = new_titles))
+
 ```
 
 ## Instantaneous Response
@@ -341,7 +480,7 @@ ggplot(df_nitrogen, aes(y=value, x=nitrogen)) +
 ```{r}
 # Set up parameters
 a_per_zeta_values <- seq(0.02, 20, length.out = 1000)  
-alpha_values <- seq(0.04, 1, length.out = 1000)     
+alpha_values <- seq(0.01, 0.04, length.out = 1000)     
 param_grid <- expand.grid(a_per_zeta = a_per_zeta_values, alpha = alpha_values)
 
 # Set chunk size and calculate number of chunks
@@ -360,7 +499,7 @@ for(chunk in 1:n_chunks) {
   chunk_results <- parallel::mclapply(start_idx:end_idx, function(i) {
     tryCatch({
       params <- list(
-        kphio = 0.087, ppfd = 300, ppfd_max = 1200,
+        kphio = 0.087, ppfd = 500, ppfd_max = 1200,
         vpd = 1000, co2 = 400, elv = 0, fapar = 0.7,
         rdark = 0.015, tc = 25, vwind = 3, netrad = 150,
         psi_soil = -0.05, nitrogen = 1, a_jmax = 800
@@ -491,6 +630,170 @@ p8 <- ggplot(fitting_parameters_no_error_all_both,
   geom_point() +
   scale_color_viridis_c() +
   labs(x = "alpha", y = "zeta") +
+  theme_minimal()
+
+# Arrange all plots in a 4x2 grid
+grid.arrange(p1, p2, p3, p4, p5, p6, p7, p8, ncol = 2)
+```
+
+## Biomass vs a_per_zeta values
+
+```{r}
+# Set up parameters
+a_per_zeta_values <- seq(0.02, 20, length.out = 100)  
+alpha_values <- seq(0.01, 0.04, length.out = 100)     
+root_biomass <- seq(0.01, 20, length.out = 100)     
+param_grid <- expand.grid(a_per_zeta = a_per_zeta_values, alpha = alpha_values, root_biomass = root_biomass)
+
+# Set chunk size and calculate number of chunks
+chunk_size <- 10000  # You can adjust this based on your memory
+n_chunks <- ceiling(nrow(param_grid) / chunk_size)
+
+# Initialize results list
+results_list <- vector("list", n_chunks)
+
+for(chunk in 1:n_chunks) {
+  start_idx <- ((chunk-1) * chunk_size) + 1
+  end_idx <- min(chunk * chunk_size, nrow(param_grid))
+  
+  cat(sprintf("Processing chunk %d of %d\n", chunk, n_chunks))
+  
+  chunk_results <- parallel::mclapply(start_idx:end_idx, function(i) {
+    tryCatch({
+      params <- list(
+        kphio = 0.087, ppfd = 500, ppfd_max = 1200,
+        vpd = 1000, co2 = 400, elv = 0, fapar = 0.7,
+        rdark = 0.015, tc = 25, vwind = 3, netrad = 150,
+        psi_soil = -0.05, nitrogen = 1, a_jmax = 800
+      )
+      
+      par_plant <- list(conductivity=3e-17, psi50=-2, b=2)
+      options <- list(
+        gs_method = "GS_IGF",
+        et_method = "ET_DIFFUSION",
+        ftemp_vj_method = "FV_kumarathunge19",
+        ftemp_rd_method = "FR_heskel16",
+        ftemp_br_method = "FB_atkin15",
+        scale_alpha = FALSE
+      )
+      
+      pa <- calc_patm(params$elv)
+      
+      par_cost_original <- list(alpha=0.1, gamma=1, root_cost_per_zeta = 1)
+      original <- as.data.frame(rphydro_numerical(
+        params$tc, params$tc, params$ppfd, params$netrad, params$vpd, 
+        params$co2, pa, params$fapar, params$kphio, params$psi_soil, 
+        params$rdark, params$vwind, par_plant, par_cost_original, options
+      ))
+      
+      current_params <- param_grid[i, ]
+      result <- as.data.frame(rphydro_nitrogen(
+        params$tc, params$tc, params$ppfd, params$netrad, params$vpd, 
+        params$co2, pa, params$nitrogen, params$fapar, params$kphio, 
+        params$psi_soil, params$rdark, params$vwind, params$a_jmax, 
+        par_plant, list(
+          alpha=current_params$alpha, 
+          gamma=1, 
+          root_cost_per_zeta = current_params$a_per_zeta,
+          root_biomass = current_params$root_biomass
+        ), 
+        options
+      ))
+      
+      result$rmse <- sqrt(sum((result[,-c(6, 10)] - original)^2)/20)
+      result$alpha <- current_params$alpha
+      result$a_per_zeta <- current_params$a_per_zeta
+      result$root_biomass <- current_params$root_biomass
+      result$dist_zeta <- abs(0.2 - result$zeta)
+      result$dist_a <- abs(original$a - result$zeta)
+      
+      return(result)
+    }, error = function(e) {
+      return(NULL)  # Return NULL instead of error message
+    })
+  }, mc.cores = parallel::detectCores()-2)
+  
+  # Filter out NULL results and combine valid results
+  valid_results <- chunk_results[!sapply(chunk_results, is.null)]
+  if(length(valid_results) > 0) {
+    results_list[[chunk]] <- do.call(rbind, valid_results)
+  }
+  
+  # Clean up memory
+  gc()
+}
+
+# Remove any NULL elements from results_list
+results_list <- results_list[!sapply(results_list, is.null)]
+
+# Combine all results
+fitting_parameters_no_error_all_both <- do.call(rbind, results_list)
+```
+
+# Plots
+```{r}
+plot(fitting_parameters_no_error_all_both$a_per_zeta, 
+     fitting_parameters_no_error_all_both$biomass,
+     xlab = "Root cost", ylab = "biomass")
+
+library(ggplot2)
+library(gridExtra)
+
+# Create the plots
+p1 <- ggplot(fitting_parameters_no_error_all_both, 
+             aes(x = a_per_zeta, y = a, color = biomass)) +
+  geom_point() +
+  scale_color_viridis_c() +
+  labs(x = "Root cost", y = "a") +
+  theme_minimal()
+
+p2 <- ggplot(fitting_parameters_no_error_all_both, 
+             aes(x = biomass, y = a, color = a_per_zeta)) +
+  geom_point() +
+  scale_color_viridis_c() +
+  labs(x = "biomass", y = "a") +
+  theme_minimal()
+
+p3 <- ggplot(fitting_parameters_no_error_all_both, 
+             aes(x = a_per_zeta, y = e, color = biomass)) +
+  geom_point() +
+  scale_color_viridis_c() +
+  labs(x = "Root cost", y = "e") +
+  theme_minimal()
+
+p4 <- ggplot(fitting_parameters_no_error_all_both, 
+             aes(x = biomass, y = e, color = a_per_zeta)) +
+  geom_point() +
+  scale_color_viridis_c() +
+  labs(x = "biomass", y = "e") +
+  theme_minimal()
+
+p5 <- ggplot(fitting_parameters_no_error_all_both, 
+             aes(x = a_per_zeta, y = n_leaf, color = biomass)) +
+  geom_point() +
+  scale_color_viridis_c() +
+  labs(x = "Root cost", y = "N leaf") +
+  theme_minimal()
+
+p6 <- ggplot(fitting_parameters_no_error_all_both, 
+             aes(x = biomass, y = n_leaf, color = a_per_zeta)) +
+  geom_point() +
+  scale_color_viridis_c() +
+  labs(x = "biomass", y = "N leaf") +
+  theme_minimal()
+
+p7 <- ggplot(fitting_parameters_no_error_all_both, 
+             aes(x = a_per_zeta, y = zeta, color = biomass)) +
+  geom_point() +
+  scale_color_viridis_c() +
+  labs(x = "Root cost", y = "zeta") +
+  theme_minimal()
+
+p8 <- ggplot(fitting_parameters_no_error_all_both, 
+             aes(x = biomass, y = zeta, color = a_per_zeta)) +
+  geom_point() +
+  scale_color_viridis_c() +
+  labs(x = "biomass", y = "zeta") +
   theme_minimal()
 
 # Arrange all plots in a 4x2 grid
