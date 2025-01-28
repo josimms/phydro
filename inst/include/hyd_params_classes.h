@@ -63,11 +63,13 @@ public:
   double alpha;
   double gamma;
   double root_cost_per_zeta;
+  double root_biomass;
   
-  inline ParCostNitrogen(double _a, double _g, double _c){
+  inline ParCostNitrogen(double _a, double _g, double _c, double _d){
     alpha = _a;
     gamma = _g;
     root_cost_per_zeta = _c;
+    root_biomass = _d;
   }
 };
 
