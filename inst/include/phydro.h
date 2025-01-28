@@ -278,7 +278,7 @@ inline PHydroResult phydro_instantaneous_numerical(double vcmax25, double jmax25
 namespace phydro{
 
 inline PHydroResultNitrogen phydro_nitrogen(double tc, double tg, double ppfd, double netrad, double vpd, double co2, double pa, double nitrogen_store, double fapar, double kphio, double psi_soil, double rdark, double vwind, double a_jmax, 
-                                            ParPlant par_plant, ParCostNitrogen par_cost = ParCostNitrogen(0.1,1,1/0.2), ParControl par_control = ParControl()){
+                                            ParPlant par_plant, ParCostNitrogen par_cost = ParCostNitrogen(0.1,1,1/0.2,1), ParControl par_control = ParControl()){
   
   // double pa = calc_patm(elv);
   
