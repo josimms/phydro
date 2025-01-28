@@ -642,7 +642,7 @@ grid.arrange(p1, p2, p3, p4, p5, p6, p7, p8, ncol = 2)
 # Set up parameters
 a_per_zeta_values <- seq(0.02, 20, length.out = 100)  
 alpha_values <- seq(0.01, 0.04, length.out = 100)     
-root_biomass <- seq(0.01, 20, length.out = 100)     
+root_biomass <- seq(1, 1, length.out = 100)     
 param_grid <- expand.grid(a_per_zeta = a_per_zeta_values, alpha = alpha_values, root_biomass = root_biomass)
 
 # Set chunk size and calculate number of chunks
