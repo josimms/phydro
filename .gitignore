@@ -34,3 +34,5 @@ tags
 1
 *.html
 .RDataTmp
+.RDataTmp2
+.RDataTmp1
